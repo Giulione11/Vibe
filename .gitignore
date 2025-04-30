@@ -1,3 +1,5 @@
 mongodb_data/
 mongodb_data/
 data/
+diagnostic.data/
+journal/
