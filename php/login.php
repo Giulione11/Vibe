@@ -1,5 +1,51 @@
-<?php 
-    session_start();
+<?php
+session_start();
+
+// Variabile per l'errore (se ci sono errori, la mostreremo)
+$error = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    // Verifica se i campi esistono
+    $username = isset($_POST['Username']) ? trim($_POST['Username']) : '';
+    $password = isset($_POST['Password']) ? trim($_POST['Password']) : '';
+
+    // Verifica che i campi non siano vuoti
+    if (empty($username) && empty($password)) {
+        $error = "Username e Password non possono essere vuoti!";
+    } elseif (empty($username)) {
+        $error = "Username non inserito!";
+    } elseif (empty($password)) {
+        $error = "Password non inserita!";
+    }else {
+        // Procedi con la connessione a MongoDB e il login
+        try {
+            $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
+
+            $query = new MongoDB\Driver\Query(['username' => $username]);
+            $cursor = $manager->executeQuery('admin.User', $query);
+            
+            $userFound = false;
+            foreach ($cursor as $document) {
+                $userFound = true;
+                // Confronta la password
+                if (password_verify($password, $document->password)) {
+                    $_SESSION['utente_loggato'] = $username;  // Set sessione
+                    header("Location: index.php");
+                    exit();
+                } else {
+                    $error = "Password errata!";
+                }
+            }
+
+            if (!$userFound) {
+                $error = "Username not found!";
+            }
+        } catch (MongoDB\Driver\Exception\Exception $e) {
+            echo "Errore nella connessione a MongoDB: " . $e->getMessage();
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -101,10 +147,10 @@
                             <h1 style="font-family: Arial, sans-serif;font-size: 40px;font-weight: bold;text-transform: uppercase;letter-spacing: 2px;text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);background: linear-gradient(135deg, #ff7f50, #ff4500);-webkit-background-clip: text;color: transparent;margin: 0;">LOGIN </h1>
                             <h3>Please enter your login credentials to access your account.</h3>
                             
-                            <form>
+                            <form method="POST" action="login.php">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Username" type="text" name="Userame">
+                                        <input class="contactus" placeholder="Username" type="text" name="Username">
                                     </div>
                                     <div class="col-sm-12">
                                         <input class="contactus" placeholder="Password" type="text" name="Password">
@@ -114,6 +160,7 @@
                                     </div>
                                 </div>
                             </form>
+                            <?php if (isset($error)) echo "<p style='color:red;'>$error</p>"; ?>
                             <div style="text-align: center; margin-top: 10px;">
                                 <a href="register.php" style="color: #ff5e00; font-weight: bold; text-decoration: none;">Don't have an account? Register here.</a>
                             </div>
