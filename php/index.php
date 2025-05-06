@@ -1,6 +1,8 @@
+<?php 
+    session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <!-- basic -->
     <meta charset="utf-8">
@@ -33,6 +35,7 @@
 <!-- body -->
 
 <body class="main-layout">
+    
     <!-- loader  -->
     <div class="loader_bg">
         <div class="loader"><img src="images/loading.gif" alt="#" /></div>
@@ -63,7 +66,11 @@
                                         <li> <a href="album.html"> Archive</a> </li>
                                         <li> <a href="blog.html">Trend</a> </li>
                                         <li> <a href="contact.html">Profile</a> </li>
-                                        <li> <a href="#contact">Login</a> </li>
+                                        <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li><a href="logout.php">Logout</a></li>
+                                        <?php else: ?>
+                                        <li><a href="login.php">Login</a></li>
+                                        <?php endif; ?>
                                     </ul>
                                 </nav>
                             </div>

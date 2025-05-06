@@ -1723,21 +1723,22 @@
      border: #b1b0b0 solid 1px;
      border-radius: 10px;
 }
- .send {
-     font-size: 16px;
-     border: #fff solid 1px;
-     padding: 10px 50px;
-     background-color: #fff;
-     align-items: center;
-     flex-wrap: wrap;
-     border-radius: 10px;
-     color: #f70e0e;
+.send {
+    font-size: 16px;
+    border: 1px solid #e66900;
+    padding: 10px 50px;
+    background-color: #fff;
+    border-radius: 10px;
+    color: #e66900;
+    transition: 0.3s ease;
 }
- .send:hover {
-     background-color: #f70e0e;
-     border: #f70e0e solid 1px;
-     color: #fff;
+.send:hover {
+    background-color: #e66900;
+    color: #fff;
+    border: 1px solid #e66900;
 }
+
+
  .address figure {
      margin: 0px;
      margin-bottom: 25px;
