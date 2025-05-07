@@ -1,6 +1,9 @@
 <?php
 session_start();
-
+if (isset($_SESSION['success_message'])) {
+    echo "<div class='success-message'>" . $_SESSION['success_message'] . "</div>";
+    unset($_SESSION['success_message']); // Rimuovi il messaggio dalla sessione dopo che è stato mostrato
+}
 // Variabile per l'errore (se ci sono errori, la mostreremo)
 $error = '';
 
@@ -50,6 +53,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <style> 
+    .success-message {
+    color: green;
+    font-size: 18px;
+    margin-bottom: 15px;
+    text-align: center;
+    font-weight: bold;
+    }
+    </style>
     <!-- basic -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -113,6 +125,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <li> <a href="blog.html">Trend</a> </li>
                                         <li> <a href="contact.html">Profile</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li> <?php echo $_SESSION['utente_loggato']?> </li>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
                                         <li><a href="login.php">Login</a></li>
@@ -153,7 +166,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <input class="contactus" placeholder="Username" type="text" name="Username">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Password" type="text" name="Password">
+                                        <input class="contactus" placeholder="Password" type="password" name="Password">
                                     </div>
                                     <div class="col-sm-12" style="margin-left: 200px">
                                         <button class="send">Login</button>

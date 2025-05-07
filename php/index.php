@@ -63,9 +63,9 @@
                                     <ul class="menu-area-main">
                                         <li class="active"> <a href="index.html">Home</a> </li>
                                         <li> <a href="about.html">TOP 100</a> </li>
-                                        <li> <a href="album.html"> Archive</a> </li>
+                                        <li> <a href="top100.php"> Archive</a> </li>
                                         <li> <a href="blog.html">Trend</a> </li>
-                                        <li> <a href="contact.html">Profile</a> </li>
+                                        <li> <a href="contact.html"><?php echo $_SESSION['utente_loggato']?></a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
@@ -76,12 +76,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
+                    <!-- <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <form class="search">
                             <input class="form-control" type="text" placeholder="Search">
                             <button><img src="images/search_icon.png"></button>
                         </form>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <!-- end header inner -->

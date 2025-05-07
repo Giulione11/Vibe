@@ -1,5 +1,92 @@
-<?php 
-    session_start();
+<?php
+// 1. Carica i dati da $_POST
+$requiredFields = ['username', 'password', 'first_name', 'last_name', 'email', 'dob', 'gender', 'bio'];
+$requiredFieldsError = ['username', 'password', 'first_name', 'last_name', 'email', 'dob', 'gender', 'bio'];
+$errorMessages = array_fill_keys($requiredFieldsError, '');
+$formData = array_fill_keys($requiredFields, '');
+$errorFound = false; // Variabile che indica se ci sono errori
+
+// Controlla se è stata fatta una richiesta POST
+if ($_SERVER["REQUEST_METHOD"] === "POST") {
+    foreach ($_POST as $key => $value) {
+        $formData[$key] = $value ?? '';
+    }
+    // 2. Controllo campi obbligatori
+    foreach ($formData as $key => $value) {
+        if ($key !== 'bio' && empty($value)) {
+            $errorMessages[$key] = ucfirst(str_replace('_', ' ', $key)) . ' is required.';
+        }
+    }
+    // 3. Validazione extra (es. email)
+    if (!empty($formData['email']) && !filter_var($formData['email'], FILTER_VALIDATE_EMAIL)) {
+        $errorMessages['email'] = "Email non valida.";
+    }
+    // 4. Connessione a MongoDB
+    try {
+        $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
+    } catch (MongoDB\Driver\Exception\Exception $e) {
+        die("Errore nella connessione a MongoDB: " . $e->getMessage());
+    }
+    // 5. Controllo username già esistente
+    if (!empty($formData['username'])) {
+        $query = new MongoDB\Driver\Query(['username' => $formData['username']]);
+        $cursor = $manager->executeQuery('admin.User', $query);
+
+        foreach ($cursor as $document) {
+            $errorMessages['username'] = "Username già esistente!";
+            break;
+        }
+    }
+    // Itera sugli errori
+    foreach ($errorMessages as $error) {
+        if (empty($error)) {
+            // Se l'errore è vuoto, non ci sono problemi, continua
+            continue;
+        } else {
+            // Se c'è un errore non vuoto, setta la variabile a true
+            $errorFound = true;
+            break; // Non è necessario continuare a controllare gli altri errori
+        }
+    }
+    // 6. Solo se NON ci sono errori, procedi con l'inserimento
+    if (!$errorFound) {     
+        try {
+            $dob = new MongoDB\BSON\UTCDateTime(strtotime($formData['dob']) * 1000);
+            $bio = empty($formData['bio']) ? "Bio non fornita" : $formData['bio'];
+
+            $bulk = new MongoDB\Driver\BulkWrite;
+
+            $dataToInsert = [
+                '_id' => new MongoDB\BSON\ObjectId(),
+                'username' => $formData['username'],
+                'password' => password_hash($formData['password'], PASSWORD_DEFAULT),
+                'data_registrazione' => new MongoDB\BSON\UTCDateTime(),
+                'profilo' => [
+                    'nome' => $formData['first_name'],
+                    'cognome' => $formData['last_name'],
+                    'email' => $formData['email'],
+                    'data_nascita' => $dob,
+                    'genere' => $formData['gender'],
+                    'bio' => $bio,
+                    'ruolo' => 'user',
+                ],
+                'preferiti' => [
+                    'brani' => []
+                ],
+                'playlist_personali' => []
+            ];
+            $bulk->insert($dataToInsert);
+            $result = $manager->executeBulkWrite('admin.User', $bulk);
+            // Imposta un messaggio di successo in sessione
+            session_start();
+            $_SESSION['success_message'] = 'Registrazione avvenuta con successo!';
+            header("Location: login.php");
+            exit();
+        } catch (MongoDB\Driver\Exception\Exception $e) {
+            echo "Errore durante l'inserimento: " . $e->getMessage();
+        }
+    }
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,6 +122,21 @@
         div.nice-select.contactus {
         display: none !important;
     }
+    /* Stile per i campi vuoti che diventano rossi */
+    /* Stile per i campi con errore */
+    /* Stile per i campi con errore */
+    .input-error {
+        border-color: red;
+    }
+
+    /* Stile per i messaggi di errore */
+    .error-message {
+        color: red;
+        font-size: 18px;
+        margin-bottom: 5px;
+        text-align: left;
+    }
+
     </style>
 </head>
 <!-- body -->
@@ -72,6 +174,7 @@
                                         <li> <a href="blog.html">Trend</a> </li>
                                         <li> <a href="contact.html">Profile</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li> <?php echo $_SESSION['utente_loggato']?> </li>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
                                         <li><a href="login.php">Login</a></li>
@@ -81,12 +184,12 @@
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
+                   <!-- <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <form class="search">
                             <input class="form-control" type="text" placeholder="Search">
                             <button><img src="images/search_icon.png"></button>
                         </form>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <!-- end header inner -->
@@ -105,43 +208,50 @@
                         <div class="address">
                             <h1 style="font-family: Arial, sans-serif;font-size: 40px;font-weight: bold;text-transform: uppercase;letter-spacing: 2px;text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);background: linear-gradient(135deg, #ff7f50, #ff4500);-webkit-background-clip: text;color: transparent;margin: 0;">REGISTER </h1>
                             <h3>Please enter your personal information.</h3>
-                            <form>
+                            <form action="register.php" method="POST">
                                 <div class="row">
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Username" type="text" name="Userame">
+                                        <?php if ($errorMessages['username']) echo "<div class='error-message'>{$errorMessages['username']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['username'] ? 'input-error' : ''; ?>" placeholder="Username" type="text" name="username" value="<?php echo htmlspecialchars($formData['username']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Password" type="text" name="Password">
+                                        <?php if ($errorMessages['password']) echo "<div class='error-message'>{$errorMessages['password']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['password'] ? 'input-error' : ''; ?>" placeholder="Password" type="password" name="password" value="<?php echo htmlspecialchars($formData['password']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="First Name" type="text" name="first_name">
+                                        <?php if ($errorMessages['first_name']) echo "<div class='error-message'>{$errorMessages['first_name']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['first_name'] ? 'input-error' : ''; ?>" placeholder="First Name" type="text" name="first_name" value="<?php echo htmlspecialchars($formData['first_name']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Last Name" type="text" name="last_name">
+                                        <?php if ($errorMessages['last_name']) echo "<div class='error-message'>{$errorMessages['last_name']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['last_name'] ? 'input-error' : ''; ?>" placeholder="Last Name" type="text" name="last_name" value="<?php echo htmlspecialchars($formData['last_name']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Email" type="email" name="email">
+                                        <?php if ($errorMessages['email']) echo "<div class='error-message'>{$errorMessages['email']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['email'] ? 'input-error' : ''; ?>" placeholder="Email" type="email" name="email" value="<?php echo htmlspecialchars($formData['email']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Date of Birth" type="date" name="dob">
+                                        <?php if ($errorMessages['dob']) echo "<div class='error-message'>{$errorMessages['dob']}</div>"; ?>
+                                        <input class="contactus <?php echo $errorMessages['dob'] ? 'input-error' : ''; ?>" placeholder="Date of Birth" type="date" name="dob" value="<?php echo htmlspecialchars($formData['dob']); ?>">
                                     </div>
                                     <div class="col-sm-12">
-                                        <select class="contactus" name="gender">
-                                            <option value="" disabled selected>Select Gender</option>
-                                            <option value="male">Male</option>
-                                            <option value="female">Female</option>
-                                            <option value="other">Other</option>
+                                        <?php if ($errorMessages['gender']) echo "<div class='error-message'>{$errorMessages['gender']}</div>"; ?>
+                                        <select class="contactus <?php echo $errorMessages['gender'] ? 'input-error' : ''; ?>" name="gender">
+                                            <option value="" disabled <?php echo $formData['gender'] === '' ? 'selected' : ''; ?>>Select Gender</option>
+                                            <option value="male" <?php echo $formData['gender'] === 'male' ? 'selected' : ''; ?>>Male</option>
+                                            <option value="female" <?php echo $formData['gender'] === 'female' ? 'selected' : ''; ?>>Female</option>
+                                            <option value="other" <?php echo $formData['gender'] === 'other' ? 'selected' : ''; ?>>Other</option>
                                         </select>
                                     </div>
                                     <div class="col-sm-12">
-                                        <textarea class="contactus" placeholder="Bio" name="bio" rows="4"></textarea>
+                                        <textarea class="contactus" placeholder="Bio" name="bio" rows="4"><?php echo htmlspecialchars($formData['bio']); ?></textarea>
                                     </div>
-
                                     <div class="col-sm-12" style="margin-left: 180px">
                                         <button class="send">Register</button>
                                     </div>
                                 </div>
                             </form>
+
                         </div>
                     </div>
                     <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 width">
