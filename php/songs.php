@@ -1,3 +1,6 @@
+<?php 
+session_start();
+?>
 <!DOCTYPE html>
 <html lang="en">
  
@@ -48,7 +51,7 @@
                         <div class="full">
                             <div class="center-desk">
                                 <div class="logo">
-                                    <a href="index.html" style="font-family:'Courier New', Courier, monospace; color: #C99700;">vibe<img src="images/logo2.jpg" alt="logo" style="width: 60px; " /></a>
+                                    <a href="index.php" style="font-family:'Courier New', Courier, monospace; color: #C99700;">vibe<img src="images/logo2.jpg" alt="logo" style="width: 60px; " /></a>
                                 </div>
                             </div>
                         </div>
@@ -57,24 +60,28 @@
                         <div class="menu-area">
                             <div class="limit-box">
                                 <nav class="main-menu">
-                                    <ul class="menu-area-main">
-                                        <li> <a href="index.html">Home</a> </li>
-                                        <li> <a href="about.html">about</a> </li>
-                                        <li class="active"> <a href="album.html"> Albums</a> </li>
-                                        <li> <a href="blog.html">Blog</a> </li>
-                                        <li> <a href="contact.html">Contact</a> </li>
-                                        <li> <a href="#contact">Login</a> </li>
+                                <ul class="menu-area-main">
+                                        <li class="active"> <a href="index.php">Home</a> </li>
+                                        <li> <a href="top100.php">TOP 100</a> </li>
+                                        <li> <a href="songs.php"> Archive</a> </li>
+                                        <li> <a href="blog.php">Trend</a> </li>
+                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
+                                        <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li><a href="logout.php">Logout</a></li>
+                                        <?php else: ?>
+                                        <li><a href="login.php">Login</a></li>
+                                        <?php endif; ?>
                                     </ul>
                                 </nav>
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
+                    <!--<div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <form class="search">
                             <input class="form-control" type="text" placeholder="Search">
                             <button><img src="images/search_icon.png"></button>
                         </form>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <!-- end header inner -->

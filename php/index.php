@@ -11,7 +11,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <!-- site metas -->
-    <title>VIBE</title>
+    <title>PROJECT</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -51,7 +51,7 @@
                         <div class="full">
                             <div class="center-desk">
                                 <div class="logo">
-                                    <a href="index.html" style="font-family:'Courier New', Courier, monospace; color: #C99700;">vibe<img src="images/logo2.jpg" alt="logo" style="width: 60px; " /></a>
+                                    <a href="index.php" style="font-family:'Courier New', Courier, monospace; color: #C99700;">vibe<img src="images/logo2.jpg" alt="logo" style="width: 60px; " /></a>
                                 </div>
                             </div>
                         </div>
@@ -60,12 +60,12 @@
                         <div class="menu-area" >
                             <div class="limit-box">
                                 <nav class="main-menu">
-                                    <ul class="menu-area-main">
-                                        <li class="active"> <a href="index.html">Home</a> </li>
-                                        <li> <a href="about.html">TOP 100</a> </li>
-                                        <li> <a href="top100.php"> Archive</a> </li>
-                                        <li> <a href="blog.html">Trend</a> </li>
-                                        <li> <a href="contact.html"><?php echo $_SESSION['utente_loggato']?></a> </li>
+                                <ul class="menu-area-main">
+                                        <li class="active"> <a href="index.php">Home</a> </li>
+                                        <li> <a href="top100.php">TOP 100</a> </li>
+                                        <li> <a href="songs.php"> Archive</a> </li>
+                                        <li> <a href="blog.php">Trend</a> </li>
+                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
