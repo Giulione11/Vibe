@@ -65,8 +65,8 @@ session_start();
                                         <li> <a href="top100.php">TOP 100</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="blog.php">Trend</a> </li>
-                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
                                         <li><a href="login.php">Login</a></li>
