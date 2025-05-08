@@ -123,8 +123,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                         <li> <a href="top100.php">TOP 100</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="blog.php">Trend</a> </li>
-                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
                                         <li><a href="login.php">Login</a></li>
@@ -134,12 +134,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             </div>
                         </div>
                     </div>
-                    <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
+                    <!-- <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <form class="search">
                             <input class="form-control" type="text" placeholder="Search">
                             <button><img src="images/search_icon.png"></button>
                         </form>
-                    </div>
+                    </div> -->
                 </div>
             </div>
             <!-- end header inner -->

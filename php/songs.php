@@ -1,18 +1,67 @@
-<?php 
+<?php
 session_start();
+$manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
+
+$filter = [];
+$options = [
+    'sort' => ['streams' => -1],
+    'limit' => 100
+];
+
+$query = new MongoDB\Driver\Query($filter, $options);
+$cursor = $manager->executeQuery('admin.Spotify', $query);
+$filters = [];
+$sort = [];
+if (!empty($_GET)) {
+
+
+    if (isset($_GET['danceability_min']) && $_GET['danceability_min'] !== '') {
+        $filters['danceability']['$gte'] = (float)$_GET['danceability_min'];
+    }
+
+    if (isset($_GET['valence_min']) && $_GET['valence_min'] !== '') {
+        $filters['valence']['$gte'] = (float)$_GET['valence_min'];
+    }
+
+    if (isset($_GET['popularity_min']) && $_GET['popularity_min'] !== '') {
+        $filters['popularity']['$gte'] = (int)$_GET['popularity_min'];
+    }
+
+    if (isset($_GET['explicit']) && $_GET['explicit'] !== '') {
+        $filters['explicit'] = (bool)$_GET['explicit'];
+    }
+if (!empty($_GET['sort_field'])) {
+    $field = $_GET['sort_field'];
+    $direction = ($_GET['sort_order'] ?? 'desc') === 'asc' ? 1 : -1;
+    $sort[$field] = $direction;
+}
+
+$options = [
+    'limit' => 100
+];
+
+if (!empty($sort)) {
+    $options['sort'] = $sort;
+}
+
+$query = new MongoDB\Driver\Query($filters, $options);
+$cursor = $manager->executeQuery('admin.Spotify', $query);
+}
+
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
- 
+
 <head>
     <!-- basic -->
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <!-- mobile metas -->
+    <!-- mobile metas porco due Mannaggia al 25 aprile, liberi da cosa? liberiamoci del comunismo invece-->
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <!-- site metas -->
-    <title>Rock</title>
+    <title>Archive</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -32,10 +81,56 @@ session_start();
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
+      <style>
+       .song-card {
+    border: 1px solid #ccc;
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+}
+
+.song-info {
+    margin-bottom: 10px;
+}
+
+.song-title {
+    font-size: 1.2em;
+    font-weight: bold;
+}
+
+.song-artist {
+    color: #555;
+}
+
+.song-danceability,
+.song-valence,
+.song-duration,
+.song-popularity,
+.song-explicit {
+    margin: 5px 0;
+}
+
+.add-button {
+    background-color: #007bff;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.add-button:hover {
+    background-color: #0056b3;
+}
+.nice-select{
+    display: none;
+}
+    </style>
 </head>
 <!-- body -->
-
-<body class="main-layout album-page">
+ 
+<body class="main-layout about-page">
     <!-- loader  -->
     <div class="loader_bg">
         <div class="loader"><img src="images/loading.gif" alt="#" /></div>
@@ -65,8 +160,8 @@ session_start();
                                         <li> <a href="top100.php">TOP 100</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="blog.php">Trend</a> </li>
-                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
+                                        <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <li><a href="logout.php">Logout</a></li>
                                         <?php else: ?>
                                         <li><a href="login.php">Login</a></li>
@@ -76,24 +171,24 @@ session_start();
                             </div>
                         </div>
                     </div>
-                    <!--<div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
+                    <!-- <div class="col-xl-2 col-lg-2 col-md-2 col-sm-2">
                         <form class="search">
                             <input class="form-control" type="text" placeholder="Search">
                             <button><img src="images/search_icon.png"></button>
                         </form>
-                    </div> -->
+                    </div> -_>
                 </div>
             </div>
             <!-- end header inner -->
     </header>
     <!-- end header -->
 
-    <div class="Albumsbg">
+    <div class="aboutbg">
         <div class="container">
             <div class="row">
                 <div class="col-md-12">
-                    <div class="Albumstitlepage">
-                        <h2>Albums</h2>
+                    <div class="abouttitlepage">
+                        <h2 style="font-family:'Courier New', Courier, monospace; font-weight: bold;">ARCHIVE</h2>
                     </div>
                 </div>
             </div>
@@ -101,171 +196,88 @@ session_start();
 
     </div>
 
-    <!-- Albums -->
-    <div class="Albums">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="titlepage">
+    <div class="song-list">
+    <form method="GET" action="">
+        <label for="danceability_min">Danceability (min):</label>
+        <input type="number" step="0.1" name="danceability_min" id="danceability_min" value="<?php echo isset($_GET['danceability_min']) ? $_GET['danceability_min'] : ''; ?>" min="0" max="1">
+        
+        <label for="valence_min">Valence (min):</label>
+        <input type="number" step="0.1" name="valence_min" id="valence_min" value="<?php echo isset($_GET['valence_min']) ? $_GET['valence_min'] : ''; ?>" min="0" max="1">
+        
+        <label for="popularity_min">Popularity (min):</label>
+        <input type="number" name="popularity_min" id="popularity_min" value="<?php echo isset($_GET['popularity_min']) ? $_GET['popularity_min'] : ''; ?>" min="0" max="100">
+        
+        <label for="explicit">Explicit:</label>
+        <select name="explicit" id="explicit">
+            <option value="">All</option>
+            <option value="1" <?php echo isset($_GET['explicit']) && $_GET['explicit'] == '1' ? 'selected' : ''; ?>>Yes</option>
+            <option value="0" <?php echo isset($_GET['explicit']) && $_GET['explicit'] == '0' ? 'selected' : ''; ?>>No</option>
+        </select>
+        
+        <label for="sort_field">Sort By:</label>
+        <select name="sort_field" id="sort_field">
+            <option value="popularity" <?php echo isset($_GET['sort_field']) && $_GET['sort_field'] == 'popularity' ? 'selected' : ''; ?>>Popularity</option>
+            <option value="danceability" <?php echo isset($_GET['sort_field']) && $_GET['sort_field'] == 'danceability' ? 'selected' : ''; ?>>Danceability</option>
+            <option value="valence" <?php echo isset($_GET['sort_field']) && $_GET['sort_field'] == 'valence' ? 'selected' : ''; ?>>Valence</option>
+        </select>
 
-                        <span>It is a long established fact that a reader will be distracted by the readable <br>content of a page when looking at its layout. The point of using Lorem </span>
-                    </div>
-                </div>
+        <label for="sort_order">Sort Order:</label>
+        <select name="sort_order" id="sort_order">
+            <option value="asc" <?php echo isset($_GET['sort_order']) && $_GET['sort_order'] == 'asc' ? 'selected' : ''; ?>>Ascending</option>
+            <option value="desc" <?php echo isset($_GET['sort_order']) && $_GET['sort_order'] == 'desc' ? 'selected' : ''; ?>>Descending</option>
+        </select>
+
+        <button type="submit">Apply Filters</button>
+    </form>
+    </br>
+    <?php foreach ($cursor as $song): ?>
+    <div class="song-card">
+        <div class="song-info">
+            <div class="song-title"><?= htmlspecialchars($song->track_name ?? 'Titolo sconosciuto') ?></div>
+            <div class="song-artist"><?= htmlspecialchars($song->{'artist(s)_name'} ?? 'Artista sconosciuto') ?></div>
+            <div class="song-danceability">
+                Danceability: <?= number_format($song->danceability ?? 0, 2) ?>
             </div>
-            <div class="row">
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album1.jpg" class="fancybox" rel="ligthbox">
-                                <img src="images/album1.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album1.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album2.jpg" class="fancybox" rel="ligthbox ">
-                                <img src="images/album2.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album2.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album2.jpg" class="fancybox" rel="ligthbox">
-                                <img src="images/album2.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album2.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album1.jpg" class="fancybox" rel="ligthbox ">
-                                <img src="images/album1.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album1.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album1.jpg" class="fancybox" rel="ligthbox">
-                                <img src="images/album1.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album1.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
-                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 margin">
-                    <div class="Albums-box">
-                        <figure>
-                            <a href="images/album2.jpg" class="fancybox" rel="ligthbox ">
-                                <img src="images/album2.jpg" class="zoom img-fluid " alt="">
-                            </a>
-                            <span class="hoverle">
-                        <a href="images/album2.jpg" class="fancybox" rel="ligthbox"><img src="images/search.png"></a>
-                        </span>
-                        </figure>
-                    </div>
-                </div>
+            <div class="song-valence">
+                Valence: <?= number_format($song->valence ?? 0, 2) ?>
+            </div>
+            <div class="song-duration">
+    <?php 
+        // Verifica il valore di $song->duration per capire che tipo di dato stiamo trattando
+        if (isset($song->duration_ms)) {
+            $durationInSecondi = floor($song->duration_ms / 1000);  // Conversione in secondi
+            if ($durationInSecondi > 0) {
+                echo "duration: " . gmdate("i:s", $durationInSecondi);  // Mostra minuti e secondi
+            } else {
+                echo "Duration: Non disponibile";
+            }
+        } else {
+            echo "Duration: Non disponibile";
+        }
+    ?>
+</div>
 
+
+
+
+            <div class="song-popularity">
+                Popularity: <?= $song->popularity ?? 'Non disponibile' ?>
+            </div>
+            <div class="song-explicit">
+                Explicit: <?= $song->explicit ? 'Yes' : 'No' ?>
             </div>
         </div>
+        <form method="POST" action="">
+            <input type="hidden" name="song_id" value="<?= (string)$song->_id ?>">
+            <button type="submit" class="add-button">Add to playlist</button>
+        </form>
     </div>
-    <!-- end Albums -->
+<?php endforeach; ?>
 
-    <!--  footer -->
-    <footr>
-        <div class="footer">
-            <div class="container">
-                <div class="row">
-                    <div class="col-lg-3 col-md-6 col-sm-12 width">
-                        <div class="address">
-                            <h3>Contact Us</h3>
-                            <ul class="locarion_icon">
-                                <li><img src="icon/1.png" alt="icon" />104 New York , USA</li>
-                                <li><img src="icon/2.png" alt="icon" />Phone : ( +71 5896547 )</li>
-                                <li><img src="icon/3.png" alt="icon" />Email : demo@email.com</li>
+</div>
 
-                            </ul>
 
-                            <ul class="contant_icon">
-                                <li><img src="icon/fb.png" alt="icon" /></li>
-                                <li><img src="icon/tw.png" alt="icon" /></li>
-                                <li><img src="icon/lin(2).png" alt="icon" /></li>
-                                <li><img src="icon/instagram.png" alt="icon" /></li>
-                            </ul>
-                        </div>
-                    </div>
-                    <div class="col-lg-6 col-md-6 col-sm-12 width">
-                        <div class="address">
-                            <h3>Get In Touch</h3>
-                            <form>
-                                <div class="row">
-                                    <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Name" type="text" name="Name">
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Phone" type="text" name="Email">
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <input class="contactus" placeholder="Email" type="text" name="Email">
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <textarea class="textarea" placeholder="Message" type="text" name="Message"></textarea>
-                                    </div>
-                                    <div class="col-sm-12">
-                                        <button class="send">Send</button>
-                                    </div>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                    <div class="col-xl-3 col-lg-3 col-md-6 col-sm-12 width">
-                        <div class="address">
-                            <h3>New Music </h3>
-                            <div class="row">
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 ">
-                                    <figure><img src="images/music1.jpg" /></figure>
-                                </div>
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 ">
-                                    <figure><img src="images/music2.jpg" /></figure>
-                                </div>
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 ">
-                                    <figure><img src="images/music3.jpg" /></figure>
-                                </div>
-                                <div class="col-xl-6 col-lg-6 col-md-6 col-sm-6 ">
-                                    <figure><img src="images/music4.jpg" /></figure>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="copyright">
-                <p>© 2019 All Rights Reserved. <a href="https://html.design/">Free html Templates</a></p>
-            </div>
-        </div>
-    </footr>
-    <!-- end footer -->
+    
     <!-- Javascript files-->
     <script src="js/jquery.min.js"></script>
     <script src="js/popper.min.js"></script>
