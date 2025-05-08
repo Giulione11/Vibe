@@ -76,8 +76,7 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
       <style>
-        body { font-family: Arial, sans-serif; background: #f9f9f9; padding: 20px; }
-        .song-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: auto; }
+        .song-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: auto;}
         .song-card {
             display: flex;
             align-items: center;
@@ -86,7 +85,7 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
             padding: 15px 20px;
             border-radius: 10px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        } 
         .song-info { flex: 1; }
         .song-title { font-size: 18px; font-weight: bold; }
         .song-artist { color: #666; }
@@ -102,18 +101,73 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
         .add-button:hover {
             background: #169c44;
         }
-        .filter-form {
-            margin-bottom: 50px;
-            display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
+        .select1 {
+            width: 100%;
+            padding: 16px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #f1f1f1;
         }
-        .filter-form label {
-            font-weight: bold;
-        }
-    </style>
+        input[type=number], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+.button1 {
+    
+  width: 20%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 0 auto;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  display: block;
+
+}
+.nice-select {
+    display: none;
+}
+.formfiltri {
+    margin-top: 20px;
+    text-align: left;
+    margin-left: 0;
+    padding: 10px;
+}
+.sfondo {
+    background-image: url('images/sfondobody.jpg'); 
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    margin-top:auto;
+    background-size: cover;
+}    
+.popup-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%; height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.popup-content {
+  background: white;
+  padding: 20px 30px;
+  border-radius: 12px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+</style>
 </head>
-<!-- body -->
  
 <body class="main-layout about-page">
     <!-- loader  -->
@@ -167,49 +221,37 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
             <!-- end header inner -->
     </header>
     <!-- end header -->
-
-    <div class="aboutbg">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="abouttitlepage">
-                        <h2 style="font-family:'Courier New', Courier, monospace; font-weight: bold;">TOP 100</h2>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-    </div>
-
-    <div class="song-list">
-    <form method="GET" class="filter-form">
-    <label>Danceability (%) maggiore di:
+    <div class="sfondo">
+    <h1 style="color: white; margin-left: 700px; font-weight:bold;">Top 100</h1>
+    <form method="GET" class="formfiltri" >
+    <label style="color: white; font-weight: bold;">Danceability (%) maggiore di:
         <input type="number" name="danceability_min" min="0" max="100" value="<?= $_GET['danceability_min'] ?? '' ?>">
     </label>
-    <label>Valence (%) maggiore di:
+    <label style="color: white; font-weight: bold;">Valence (%) maggiore di:
         <input type="number" name="valence_min" min="0" max="100" value="<?= $_GET['valence_min'] ?? '' ?>">
     </label>
-    <label>BPM maggiore di:
+    <label style="color: white; font-weight: bold;">BPM maggiore di:
         <input type="number" name="bpm_min" min="0" value="<?= $_GET['bpm_min'] ?? '' ?>">
     </label>
-    <label>Ordina per:
-    <select name="sort_field">
-        <option value="streams" <?= $_GET['sort_field'] ?? '' === 'streams' ? 'selected' : '' ?>>Streams</option>
-        <option value="danceability_%" <?= $_GET['sort_field'] ?? '' === 'danceability_%' ? 'selected' : '' ?>>Danceability</option>
-        <option value="valence_%" <?= $_GET['sort_field'] ?? '' === 'valence_%' ? 'selected' : '' ?>>Valence</option>
-        <option value="bpm" <?= $_GET['sort_field'] ?? '' === 'bpm' ? 'selected' : '' ?>>BPM</option>
+    <label style="color: white; font-weight: bold;">Ordina per:
+    <select name="sort_field" class="select1">
+        <option value="streams" <?= $_GET['sort_field'] ?? '' ?>>Streams</option>
+        <option value="danceability_%" <?= $_GET['sort_field'] ?? ''  ?>>Danceability</option>
+        <option value="valence_%" <?= $_GET['sort_field'] ?? '' ?>>Valence</option>
+        <option value="bpm" <?= $_GET['sort_field'] ?? ''?>>BPM</option>
     </select>
-</label>
+    </label>
 
-<label>Direzione:
-    <select name="sort_order">
+<label style="color: white; font-weight: bold;">Direzione:
+    <select name="sort_order" class="select1">
         <option value="desc" <?= $_GET['sort_order'] ?? '' === 'desc' ? 'selected' : '' ?>>Decrescente</option>
         <option value="asc" <?= $_GET['sort_order'] ?? '' === 'asc' ? 'selected' : '' ?>>Crescente</option>
     </select>
 </label>
 
-    <button type="submit">Applica filtri</button>
+    <button type="submit" class="button1">Applica filtri</button>
     </form>
+    <div class="song-list">
     <?php foreach ($cursor as $song): ?>
         <div class="song-card">
             <div class="song-info">
@@ -219,17 +261,46 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
                     Streams: <?= $song->streams ?>
                 </div>
             </div>
-            <form method="POST" action="">
+            <form method="POST" action="" onsubmit="handleAdd(event, this)">
                 <input type="hidden" name="song_id" value="<?= (string)$song->_id ?>">
                 <button type="submit" class="add-button">Add to playlist</button>
             </form>
         </div>
     <?php endforeach; ?>
+    <div id="popup" class="popup-overlay" style="display: none;">
+  <div class="popup-content">
+    <p>Brano aggiunto alla playlist!</p>
+    <button onclick="closePopup()">Chiudi</button>
+  </div>
 </div>
-
+</div>
+    </div>
 
     
     <!-- Javascript files-->
+    <script>
+function showPopup() {
+  document.getElementById('popup').style.display = 'flex';
+}
+
+function closePopup() {
+  document.getElementById('popup').style.display = 'none';
+}
+</script>
+<script>
+function handleAdd(event, form) {
+  event.preventDefault(); // blocca il submit tradizionale
+
+  const formData = new FormData(form);
+  fetch(form.action, {
+    method: 'POST',
+    body: formData
+  })
+  .then(res => res.ok ? showPopup() : alert('Errore'))
+  .catch(err => alert('Errore nella richiesta'));
+}
+</script>
+
     <script src="js/jquery.min.js"></script>
     <script src="js/popper.min.js"></script>
     <script src="js/bootstrap.bundle.min.js"></script>
