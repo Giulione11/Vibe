@@ -1,5 +1,68 @@
 <?php 
 session_start();
+$manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
+
+$username = $_SESSION['utente_loggato']; // o qualunque username attivo
+
+// 1. Carica l'utente
+$filter = ['username' => $username];
+$query = new MongoDB\Driver\Query($filter);
+$userCursor = $manager->executeQuery('admin.User', $query);
+$user = current($userCursor->toArray());
+
+if (!$user) {
+    die("Utente non trovato");
+}
+use MongoDB\BSON\ObjectId;
+
+// 1. Raccogli tutti gli ID dei brani
+$all_ids = [];
+
+foreach ($user->preferiti->brani ?? [] as $b) {
+    $all_ids[] = $b->id_brano;
+}
+
+foreach ($user->playlist_personali ?? [] as $playlist) {
+    foreach ($playlist->brani ?? [] as $b) {
+        $all_ids[] = $b->id_brano;
+    }
+}
+
+$all_ids = array_unique($all_ids);
+
+// 2. Converti in ObjectId validi
+$objectIds = [];
+foreach ($all_ids as $id) {
+    try {
+        $objectIds[] = new ObjectId($id);
+    } catch (Exception $e) {
+        // ID non valido, salta
+    }
+}
+
+// 3. Cerca in entrambe le collezioni
+$tracks = [];
+
+if (!empty($objectIds)) {
+    // Prima collezione
+    $query1 = new MongoDB\Driver\Query(['_id' => ['$in' => $objectIds]]);
+    $cursor1 = $manager->executeQuery('admin.Spotify2023', $query1);
+    foreach ($cursor1 as $track) {
+        $tracks[(string)$track->_id] = $track;
+    }
+
+    // Seconda collezione (solo quelli mancanti)
+    $remaining = array_diff($objectIds, array_map(fn($id) => new ObjectId($id), array_keys($tracks)));
+
+    if (!empty($remaining)) {
+        $query2 = new MongoDB\Driver\Query(['_id' => ['$in' => $remaining]]);
+        $cursor2 = $manager->executeQuery('admin.Spotify', $query2);
+        foreach ($cursor2 as $track) {
+            $tracks[(string)$track->_id] = $track;
+        }
+    }
+}
+
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +75,7 @@ session_start();
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <!-- site metas -->
-    <title>Rock</title>
+    <title>Profile</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -32,6 +95,29 @@ session_start();
     <!--[if lt IE 9]>
       <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
       <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script><![endif]-->
+    <style> 
+        .sfondo {
+    background-image: url('images/sfondobody.jpg'); 
+    background-repeat: no-repeat;
+    background-position: center;
+    background-attachment: fixed;
+    margin-top:auto;
+    background-size: cover;
+    width: 100%;
+    height: 100vh; /* vh = viewport height */
+}    
+.song-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: auto;opacity: 0.8;}
+.song-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        } 
+        .song-info { flex: 1;}
+    </style>
 </head>
 <!-- body -->
 
@@ -51,17 +137,17 @@ session_start();
                         <div class="full">
                             <div class="center-desk">
                                 <div class="logo">
-                                    <a href="index.php"><img src="images/logo.jpg" alt="logo" /></a>
+                                <a href="index.php" style="font-family:'Courier New', Courier, monospace; color: #C99700;">vibe<img src="images/logo2.jpg" alt="logo" style="width: 60px; " /></a>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    </div> 
                     <div class="col-xl-8 col-lg-8 col-md-10 col-sm-10">
                         <div class="menu-area">
                             <div class="limit-box">
                                 <nav class="main-menu">
                                 <ul class="menu-area-main">
-                                        <li class="active"> <a href="index.php">Home</a> </li>
+                                        <li> <a href="index.php">Home</a> </li>
                                         <li> <a href="top100.php">TOP 100</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="blog.php">Trend</a> </li>
@@ -87,53 +173,82 @@ session_start();
             <!-- end header inner -->
     </header>
     <!-- end header -->
+    <div class="sfondo">
+       <h1 style="color: white; margin-left: 700px; font-weight:bold;">PROFILE</h1>
+       <div class="song-list">
+        <div class="song-card">
+            <div class="song-info">
+       <h2 style="font-weight: bold;">Profilo </h2>
+<p>Nome: <?= $user->profilo->nome ?> </p>
+<p>Cognome: <?= $user->profilo->cognome ?></p>
+<p>Email: <?= $user->profilo->email ?></p>
+<p>Genere: <?= $user->profilo->genere ?></p>
+<p>Data di nascita: <?= $user->profilo->data_nascita ?></p>
+<p>Bio: <?= $user->profilo->bio ?></p>
+            </div>
+            </div>
+            <div class="song-card">
+            <div class="song-info">
+<h3 style="font-weight: bold;">🎧 Brani Preferiti</h3>
+<ul>
+<?php foreach ($user->preferiti->brani ?? [] as $b): ?>
+    <?php 
+        $id = (string)$b->id_brano;
+        $track = $tracks[$id] ?? null;
+        $artistName = isset($track->{'artists'}) ? $track->{'artists'} : 'Artista sconosciuto';
+        ?>
+    <li> <?=  $track ? $track->track_name . " - " . $artistName : 'Brano non trovato'    ?></li>
+<?php endforeach; ?>
+</ul>
+            </div>
+            </div>
+            <div class="song-card">
+            <div class="song-info">
+            <div style="display: flex; align-items: center; gap: 10px;">
+<h3 style="font-weight: bold; text-align: center;margin: 0;">🎶 Playlist Personali</h3>
+<button id="addPlaylistBtn" title="Crea nuova playlist" style="
+        background-color: green;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 25px;
+        height: 25px;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-top: -7px;
+    ">+</button></div>
+<?php foreach ($user->playlist_personali ?? [] as $playlist): ?>
+    <div style="display: flex; align-items: center; gap: 10px;">
+    <h4><?= $playlist->nome_playlist ?></h4>
+    <form method="post" action="rimuovi_playlist.php" onsubmit="return confirm('Sei sicuro di voler rimuovere questa playlist?');" style="margin: 0;">
+        <input type="hidden" name="nome_playlist" value="<?= htmlspecialchars($playlist->nome_playlist) ?>">
+        <button type="submit" title="Rimuovi playlist" style="
+            background: none;
+            border: none;
+            color: red;
+            font-size: 20px;
+            cursor: pointer;
+            display:flex;
+            margin-top: -7px;
 
-    <div class="contactbg">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-12">
-                    <div class="contacttitlepage">
-                        <h2>contact</h2>
-                    </div>
-                </div>
+        ">🗑️</button>
+    </form>
+    </div>
+    <p><?= $playlist->descrizione ?></p>
+    <ul>
+    <?php foreach ($playlist->brani ?? [] as $b): ?>
+        <?php $track = $tracks[$b->id_brano] ?? null; ?>
+        <li><?= $track ? $track->track_name . " - " . $track->{'artists'} : "Brano non trovato" ?></li>
+    <?php endforeach; ?>
+    </ul>
+<?php endforeach; ?>
             </div>
         </div>
-
-    </div>
-    <div class="container">
-        <div class="row">
-            <div class=" col-md-6 offset-md-3">
-                <div class="address">
-
-                    <form>
-                        <div class="row">
-                            <div class="col-sm-12">
-                                <input class="contactus" placeholder="Name" type="text" name="Name">
-                            </div>
-                            <div class="col-sm-12">
-                                <input class="contactus" placeholder="Phone" type="text" name="Email">
-                            </div>
-                            <div class="col-sm-12">
-                                <input class="contactus" placeholder="Email" type="text" name="Email">
-                            </div>
-                            <div class="col-sm-12">
-                                <textarea class="textarea" placeholder="Message" type="text" name="Message"></textarea>
-                            </div>
-                            <div class="col-sm-12">
-                                <button class="send">Send</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!--  footer -->
-
-    <div class="copyright">
-        <div class="container">
-            <p>© 2019 All Rights Reserved. <a href="https://html.design/">Free html Templates</a></p>
-        </div>
+       </div>
     </div>
 
     <!-- end footer -->
