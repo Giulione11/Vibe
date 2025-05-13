@@ -1,5 +1,4 @@
 <?php
-ob_start(); // Avvia il buffering dell'output
 session_start();
 // Verifica se l'utente è loggato
 if (!isset($_SESSION['utente_loggato'])) {
@@ -10,7 +9,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 
 $filter = [];
 $options = [
-    'sort' => ['streams' => -1],
+    'sort' => ['popularity' => -1],
     'limit' => 100
 ];
 
@@ -117,8 +116,55 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['track_id']) && !empt
         exit(); // Uscita per evitare altri output
     }
 }
-ob_end_clean(); // Pulisce il buffer dell'output
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'get_playlists') {
+    
+    $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
+
+    $username = $_SESSION['utente_loggato'];
+    
+    $filter = ['username' => $username];
+      // Recupera l'id del brano passato via POST
+    $idBranoCliccato = $_POST['song_id'] ?? null;
+    $query = new MongoDB\Driver\Query($filter);
+    $userCursor = $manager->executeQuery('admin.User', $query);
+    $user = current($userCursor->toArray());
+
+    if (!$user) {
+        die("Utente non trovato");
+    }
+
+    header('Content-Type: application/json');
+
+    if (!empty($user->playlist_personali)) {
+        // Mappiamo le playlist per includere anche solo gli id dei brani come array
+        // Mappa le playlist
+    $playlistArray = array_map(function($playlist) {
+        return [
+            'nome_playlist' => $playlist->nome_playlist,
+            'descrizione' => $playlist->descrizione ?? '',
+            'brani' => array_map(function($brano) {
+                return $brano->id_brano;
+            }, $playlist->brani ?? [])
+        ];
+    }, $user->playlist_personali ?? []);
+
+    // Risposta finale con anche id del brano richiesto
+    $response = [
+        'id_brano_richiesto' => $idBranoCliccato,
+        'playlists' => $playlistArray
+    ];
+        echo json_encode($response);
+        exit();
+    } else {
+        echo json_encode([]);
+        exit();
+    }
+}
+
+
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -176,7 +222,11 @@ ob_end_clean(); // Pulisce il buffer dell'output
             border: none;
             border-radius: 6px;
             cursor: pointer;
-        }
+            display: block;
+            margin-top: 20px;
+            margin-left: auto;
+            margin-right: auto;
+        } 
         .add-button:hover {
             background: #169c44;
         }
@@ -243,6 +293,191 @@ ob_end_clean(); // Pulisce il buffer dell'output
   border-radius: 12px;
   box-shadow: 0 5px 15px rgba(0,0,0,0.3);
   text-align: center;
+}
+/* Titolo */
+.popup-content h2 {
+  font-size: 24px;
+  margin-bottom: 15px;
+  font-weight: bold;
+}
+
+/* Stile per la lista delle playlist */
+#playlist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-height: 300px; /* Imposto un'altezza massima con scroll */
+  overflow-y: auto;
+}
+
+#playlist-list li {
+  padding: 10px;
+  background-color: #f1f1f1;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+#playlist-list li:hover {
+  background-color: #ddd; /* Cambia colore al passaggio del mouse */
+}
+
+/* Bottoni all'interno del pop-up */
+.popup-buttons {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Bottone per "Annulla" */
+#close-popup {
+  padding: 10px 20px;
+  background-color: #ccc;
+  color: #333;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#close-popup:hover {
+  background-color: #bbb;
+}
+
+/* Bottone per "Aggiungi alla Playlist" */
+#add-to-playlist {
+  padding: 10px 20px;
+  background-color: #1db954;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+#add-to-playlist:hover {
+  background-color: #169c44;
+}
+.no-playlist-link {
+  color: #007bff;
+  text-decoration: underline;
+  display: inline-block;
+  margin-top: 10px;
+}
+#addPlaylistItemBtn {
+  background-color: green;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.playlist-table {
+  max-height: 300px; /* altezza massima visibile */
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding-right: 8px; /* spazio per scrollbar */
+}
+
+/* Riga "tipo tabella" */
+.playlist-row {
+  display: grid;
+  grid-template-columns: 1fr auto; /* nome a sinistra, bottone a destra */
+  align-items: center;
+  padding: 8px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  background-color: #f9f9f9;
+}
+
+/* Celle */
+.playlist-cell.name {
+  font-weight: 500;
+  font-size: 16px;
+  padding-left: 5px;
+}
+
+.playlist-cell.button {
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* Bottone "+" */
+.addPlaylistItemBtn {
+  background-color: green;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.playlistToggleBtn {
+  border: none;
+  border-radius: 50%;
+  width: 25px;
+  height: 25px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* verde: aggiungi */
+.playlistToggleBtn.add {
+  background-color: green;
+  color: white;
+}
+
+/* rosso: rimuovi */
+.playlistToggleBtn.remove {
+  background-color: red;
+  color: white;
+}
+.toast {
+    visibility: hidden;
+    min-width: 250px;
+    margin-left: -125px;
+    background-color: #333;
+    color: white;
+    text-align: center;
+    border-radius: 2px;
+    padding: 16px;
+    position: fixed;
+    z-index: 1;
+    left: 50%;
+    bottom: 30px;
+    font-size: 17px;
+}
+
+.toast.show {
+    visibility: visible;
+    animation: fadein 0.5s, fadeout 0.5s 2.5s;
+}
+
+@keyframes fadein {
+    from {bottom: 0; opacity: 0;}
+    to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadeout {
+    from {bottom: 30px; opacity: 1;}
+    to {bottom: 0; opacity: 0;}
 }
 
     </style>
@@ -374,34 +609,50 @@ ob_end_clean(); // Pulisce il buffer dell'output
                 <div class="button-container">
                     <?php if (isset($_SESSION['utente_loggato'])): ?>
                         <!-- Bottone "Add to playlist" -->
-                        <form method="POST" action="" onsubmit="handleAdd(event, this)">
+                        <form method="POST" action="" onsubmit="handleAdd(event, this, 'playlist')">
                             <input type="hidden" name="song_id" value="<?= (string)$song->_id ?>">
-                            <button type="submit" class="add-button">Add to playlist</button>
-                        </form>
+                            <input type="hidden" name="song_name" value="<?= (string)$song->track_name ?>">
+                            <input type="hidden" name="addToFavorites" value="false">
+                            <button id="aggiungiPlaylistBtn" class="add-button">Aggiungi alla Playlist</button>
+                            </form>
                     </br>
                         <!-- Bottone "Aggiungi ai preferiti" -->
-                        <form method="POST" action=""  onsubmit="handleAdd(event, this)">
+                        <form method="POST" action=""  onsubmit="handleAdd(event, this, 'preferiti')">
                             <input type="hidden" name="track_id" value="<?= htmlspecialchars($song->_id) ?>">
                             <input type="hidden" name="track_name" value="<?= (string)$song->track_name ?>">
+                            <input type="hidden" name="addToFavorites" value="true">
                             <button class="add-button" type="submit">Aggiungi ai preferiti</button>
                         </form>
                     <?php else: ?>
-                        <p><a href="login.php">Per aggiungere ai preferiti, effettua il login!</a></p>
+                        <p><a href="login.php">Per aggiungere ai preferiti e alle playlist, effettua il login!</a></p>
                     <?php endif; ?>
                 </div>
             </div>
         <?php endforeach; ?>
     </div>
 
-    <div id="popup" class="popup-overlay" style="display: none;">
+<div id="popup" class="popup-overlay" style="display: none;">
     <div class="popup-content">
         <p id="popup-message">Qui verrà mostrato il messaggio</p>
         <button onclick="closePopup()">Chiudi</button>
     </div>
 </div>
-
-
+<div id="playlist-popup" class="popup" style="display: none;">
+  <div class="popup-content">
+    <h2>Seleziona una Playlist</h2>
+    <ul id="playlist-list">
+      <!-- La lista delle playlist verrà aggiunta dinamicamente tramite JS -->
+    </ul>
+    <div class="popup-buttons">
+      <button id="close-popup" onclick="closePlaylistPopup()">Annulla</button>
+      <button id="add-to-playlist" onclick="addToPlaylist()">Aggiungi alla Playlist</button>
+    </div>
+  </div>
 </div>
+</div>
+
+<div id="toast"></div>
+
 
 <script>
 function showPopup(message, isSuccess) {
@@ -424,39 +675,202 @@ function showPopup(message, isSuccess) {
 
 function closePopup() {
   document.getElementById('popup').style.display = 'none';
+  //document.getElementById('popup-playlist').style.display = 'none';
 }
 
-function handleAdd(event, form) {
-  event.preventDefault(); // blocca il submit tradizionale
+function handleAdd(event, form, tipo) {
+  event.preventDefault();
 
   const formData = new FormData(form);
 
-  fetch(form.action, {
-  method: 'POST',
-  body: formData
-})
-.then(res => {
-  if (!res.ok) {
-    return res.text(); // Mostra il testo della risposta in caso di errore
+  if (tipo === 'preferiti') {
+    fetch(form.action, {
+      method: 'POST',
+      body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.success) {
+        showPopup(data.message, true);
+      } else {
+        showPopup(data.message, false);
+      }
+    })
+    .catch(err => {
+      showPopup('Errore: ' + err, false);
+    });
+
+  } else if (tipo === 'playlist') {
+    // Estrai il songId dal form
+    formData.append("action", "get_playlists");
+
+    fetch(form.action, {
+      method: "POST",
+      body: formData,
+    })
+      .then(res => res.json())
+      .then(data => {
+        console.log("Playlist ricevute:", data);
+        mostraPopupPlaylist(data.playlists, data.id_brano_richiesto);
+      })
+      .catch(err => {
+        console.error("Errore fetch playlist:", err);
+      });
+
+    return;
   }
-  return res.json(); // Continua a leggere la risposta come JSON se è OK
+}
+function mostraPopupPlaylist(playlists, branoId) {
+    const popup = document.createElement("div");
+    popup.className = "popup-overlay";
+    popup.id = "playlistPopupAdd"; // 👈 aggiungi questo
+
+    const content = document.createElement("div");
+    content.className = "popup-content";
+
+    const title = document.createElement("h3");
+    title.textContent = "Scegli una playlist";
+    content.appendChild(title);
+
+    if (playlists.length === 0) {
+        const br = document.createElement("br");
+        const noPlaylists = document.createElement("a");
+        noPlaylists.href = "profilo.php"; // cambia con il path corretto se diverso
+        noPlaylists.textContent = "Non hai playlist. Clicca qui per crearne una!";
+        noPlaylists.className = "no-playlist-link"; // opzionale: per styling
+        content.appendChild(br);
+        content.appendChild(noPlaylists);
+    } else {
+        const table = document.createElement("div");
+        table.className = "playlist-table";
+
+        playlists.forEach(pl => {
+            const row = document.createElement("div");
+            row.className = "playlist-row";
+
+            const cellName = document.createElement("div");
+            cellName.className = "playlist-cell name";
+            cellName.textContent = pl.nome_playlist || "Senza nome";
+
+            const cellBtn = document.createElement("div");
+            cellBtn.className = "playlist-cell button";
+
+            // ID del brano da aggiungere (questo lo dovrai avere già definito)
+
+            const addBtn = document.createElement("button");
+            addBtn.className = "addPlaylistItemBtn";
+            addBtn.title = "Aggiungi a questa playlist";
+            addBtn.innerText = "+";
+
+             // Controlla se il brano è già nella playlist
+             if (pl.brani && pl.brani.includes(branoId)) {
+                addBtn.innerText = "-"; // Se il brano è già nella playlist, cambia a "-"
+                addBtn.style.color = "red"; // Cambia il colore del bottone a rosso
+                addBtn.style.backgroundColor = "red";
+                addBtn.style.color = "white"; // opzionale: per rendere il testo leggibile sul rosso
+         
+                addBtn.onclick = () => {
+                    console.log(`Il brano è già presente nella playlist: ${pl.nome_playlist}`);
+                    // Aggiungi logica per rimuovere il brano, se necessario
+                    rimuoviCanzoneDaPlaylist(pl.nome_playlist, branoId); // Implementa la funzione per rimuovere il brano
+                };
+            } else {
+                addBtn.onclick = () => {
+                    console.log(`Aggiunta alla playlist: ${pl.nome_playlist}`);
+                    // Aggiungi il brano alla playlist qui
+                    aggiungiCanzoneAPlaylist(pl.nome_playlist, branoId); // Dovrai implementare questa funzione
+                };
+            }
+
+            cellBtn.appendChild(addBtn);
+            row.appendChild(cellName);
+            row.appendChild(cellBtn);
+            table.appendChild(row);
+        });
+
+        content.appendChild(table);
+    }
+
+    const closeBtn = document.createElement("button");
+    closeBtn.textContent = "Chiudi";
+    closeBtn.className = "add-button";
+    closeBtn.onclick = () => popup.remove();
+
+    content.appendChild(closeBtn);
+    popup.appendChild(content);
+    document.body.appendChild(popup);
+}
+
+function closePlaylistPopup() {
+  document.getElementById('playlistPopup').style.display = 'none';
+}
+function aggiungiCanzoneAPlaylist(playlistName, branoId) {
+    fetch('modifica_playlist.php', {
+    method: 'POST',
+    body: JSON.stringify({
+        nome_playlist: playlistName,
+        song_id: branoId,
+        action: 'aggiungi'
+    })
 })
+.then(response => response.json())
 .then(data => {
-  console.log(data); // Aggiungi il log per vedere la risposta
-  if (data.success) {
-    showPopup(data.message, true); // Mostra il pop-up con messaggio di successo
-  } else {
-    showPopup(data.message, false); // Mostra il pop-up con messaggio di errore
-  }
+    const toast = document.getElementById('toast');
+
+    if (data.success) {
+        toast.style.backgroundColor = '#4CAF50'; // Verde per successo
+        toast.innerHTML = data.message;
+        document.getElementById('playlistPopupAdd').remove();
+
+    } else {
+
+        toast.style.backgroundColor = '#f44336'; // Rosso per errore
+        toast.innerHTML = `Errore: ${data.message}`;
+    }
+
+    toast.className = "toast show"; // Mostra il toast
+    setTimeout(() => {
+        toast.className = toast.className.replace("show", ""); // Nascondi il toast dopo 3 secondi
+    }, 3000);
 })
-.catch(err => {
-  console.error('Errore nella richiesta:', err); // Log per l'errore
-  showPopup('Errore nella richiesta'+ err, false); // Mostra errore se c’è un problema nella richiesta
-});
+.catch(error => console.error('Errore nella richiesta:', error));
 
 }
-</script>
 
+function rimuoviCanzoneDaPlaylist(playlistName, branoId) {
+    fetch('modifica_playlist.php', {
+    method: 'POST',
+    body: JSON.stringify({
+        nome_playlist: playlistName,
+        song_id: branoId,
+        action: 'rimuovi'
+    })
+})
+.then(response => response.json())
+.then(data => {
+    const toast = document.getElementById('toast');
+
+    if (data.success) {
+        toast.style.backgroundColor = '#4CAF50'; // Verde per successo
+        toast.innerHTML = data.message;
+        document.getElementById('playlistPopupAdd').remove();
+    } else {
+        toast.style.backgroundColor = '#f44336'; // Rosso per errore
+        toast.innerHTML = `Errore: ${data.message}`;
+    }
+
+    toast.className = "toast show"; // Mostra il toast
+    setTimeout(() => {
+        toast.className = toast.className.replace("show", ""); // Nascondi il toast dopo 3 secondi
+    }, 3000);
+})
+.catch(error => console.error('Errore nella richiesta:', error));
+
+}
+
+
+
+</script>
 
 <!-- Aggiungi nella parte inferiore del body per includere i file JS di Bootstrap -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
