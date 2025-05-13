@@ -2,12 +2,16 @@
 session_start();
 $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 
+$limit = 25;
+$page = isset($_GET['page']) && is_numeric($_GET['page']) ? max(1, (int)$_GET['page']) : 1;
+$skip = ($page - 1) * $limit;
+
 $filter = [];
 $options = [
     'sort' => ['streams' => -1],
-    'limit' => 100
+    'limit' => $limit,
+    'skip' => $skip
 ];
-
 $query = new MongoDB\Driver\Query($filter, $options);
 $cursor = $manager->executeQuery('admin.Spotify2023', $query);
 $filters = [];
@@ -30,9 +34,7 @@ if (!empty($_GET['sort_field'])) {
     $sort[$field] = $direction;
 }
 
-$options = [
-    'limit' => 100
-];
+
 
 if (!empty($sort)) {
     $options['sort'] = $sort;
@@ -251,6 +253,19 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
 
     <button type="submit" class="button1">Applica filtri</button>
     </form>
+    <div style="text-align:center; margin: 10px;">
+    <?php for ($i = 1; $i <= 4; $i++): ?>
+        <?php
+            // Mantieni i parametri della query (filtri/sort)
+            $queryParams = $_GET;
+            $queryParams['page'] = $i;
+            $url = '?' . http_build_query($queryParams);
+        ?>
+        <a href="<?= $url ?>" style="margin: 0 10px; padding: 8px 12px; background-color: <?= $i == $page ? '#1db954' : '#eee' ?>; color: <?= $i == $page ? 'white' : '#333' ?>; text-decoration: none; border-radius: 5px;">
+            <?= $i ?>
+        </a>
+    <?php endfor; ?>
+</div>
     <div class="song-list">
     <?php foreach ($cursor as $song): ?>
         <div class="song-card">
@@ -274,6 +289,7 @@ $cursor = $manager->executeQuery('admin.Spotify2023', $query);
   </div>
 </div>
 </div>
+
     </div>
 
     

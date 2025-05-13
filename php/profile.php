@@ -197,7 +197,13 @@ if (!empty($objectIds)) {
         $track = $tracks[$id] ?? null;
         $artistName = isset($track->{'artists'}) ? $track->{'artists'} : 'Artista sconosciuto';
         ?>
-    <li> <?=  $track ? $track->track_name . " - " . $artistName : 'Brano non trovato'    ?></li>
+    <li> <?=  $track ? $track->track_name . " - " . $artistName : 'Brano non trovato'    ?>
+<?php if ($track): ?>
+        <form method="post" action="rimuovi_preferito.php" style="display:inline;">
+            <input type="hidden" name="id_brano" value="<?= $id ?>">
+            <button type="submit" style="background:none;border:none;color:red;cursor:pointer;" title="Rimuovi dai preferiti" >🗑️</button>
+        </form>
+    <?php endif; ?></li>
 <?php endforeach; ?>
 </ul>
             </div>
@@ -242,7 +248,14 @@ if (!empty($objectIds)) {
     <ul>
     <?php foreach ($playlist->brani ?? [] as $b): ?>
         <?php $track = $tracks[$b->id_brano] ?? null; ?>
-        <li><?= $track ? $track->track_name . " - " . $track->{'artists'} : "Brano non trovato" ?></li>
+        <li><?= $track ? $track->track_name . " - " . $track->{'artists'} : "Brano non trovato" ?>
+    <?php if ($track): ?>
+        <form method="post" action="rimuovi_da_playlist.php" style="display:inline;">
+            <input type="hidden" name="id_brano" value="<?= $b->id_brano ?>">
+            <input type="hidden" name="nome_playlist" value="<?= htmlspecialchars($playlist->nome_playlist) ?>">
+            <button type="submit" style="background:none;border:none;color:red;cursor:pointer;" title="Rimuovi dalla playlist">🗑️</button>
+        </form>
+    <?php endif; ?></li>
     <?php endforeach; ?>
     </ul>
 <?php endforeach; ?>
@@ -250,6 +263,46 @@ if (!empty($objectIds)) {
         </div>
        </div>
     </div>
+<!-- MODALE PER CREARE UNA NUOVA PLAYLIST -->
+<div id="playlistModal" style="
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+">
+    <div style="
+        background: white;
+        padding: 20px;
+        border-radius: 10px;
+        width: 300px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        position: relative;
+    ">
+        <h3>Crea Playlist</h3>
+        <form method="POST" action="crea_playlist.php">
+            <label>Nome Playlist:</label><br>
+            <input type="text" name="nome_playlist" required><br><br>
+            
+            <label>Descrizione:</label><br>
+            <textarea name="descrizione" rows="3" style="width: 100%;"></textarea><br><br>
+            
+            <button type="submit" style="background-color: green; color: white; padding: 5px 10px; border: none;">Crea</button>
+            <button type="button" onclick="closeModal()" style="margin-left: 10px;">Annulla</button>
+        </form>
+    </div>
+</div>
+<!-- MODALE CENTRALE -->
+<div id="successModal" style="display:none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+    background-color: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+  <div style="background: white; padding: 30px 40px; border-radius: 10px; text-align: center; max-width: 400px; box-shadow: 0 0 10px rgba(0,0,0,0.3);">
+    <h4 id="successMessage" style="margin: 0;"></h4>
+  </div>
+</div>
 
     <!-- end footer -->
     <!-- Javascript files-->
@@ -278,6 +331,61 @@ if (!empty($objectIds)) {
             });
         });
     </script>
+    <script>
+    const modal = document.getElementById("playlistModal");
+
+    document.getElementById("addPlaylistBtn").addEventListener("click", function () {
+        modal.style.display = "flex";
+    });
+
+    function closeModal() {
+        modal.style.display = "none";
+    }
+
+    // Chiudi se clicchi fuori
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            closeModal();
+        }
+    }
+</script>
+
+<script>
+  function getParam(name) {
+    const url = new URL(window.location.href);
+    return url.searchParams.get(name);
+  }
+
+  const success = getParam("success");
+  if (success) {
+    const messages = {
+      "brano_rimosso": "✅ Brano rimosso con successo.",
+      "playlist_rimossa": "🗑️ Playlist eliminata.",
+      "brano_aggiunto": "🎵 Brano aggiunto con successo.",
+      "playlist_creata": "📁 Playlist creata con successo!",
+      "playlist_duplicata": "⚠️ Esiste già una playlist con questo nome!",
+      "errore_nome_vuoto": "⚠️ Inserisci un nome valido per la playlist."
+    };
+
+    const modal = document.getElementById("successModal");
+    const message = messages[success] || "✅ Operazione completata.";
+    document.getElementById("successMessage").textContent = message;
+
+    modal.style.display = "flex";
+
+    // Chiudi dopo 3.5 secondi
+    setTimeout(() => {
+      modal.style.display = "none";
+
+      // Rimuovi parametro "success" dalla URL senza ricaricare
+      const url = new URL(window.location);
+      url.searchParams.delete("success");
+      window.history.replaceState({}, document.title, url);
+    }, 3500);
+  }
+</script>
+
+
 </body>
 
 </html>
