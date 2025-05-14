@@ -7,51 +7,98 @@ if (!isset($_SESSION['utente_loggato'])) {
 }
 $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 
+// Supponiamo che $total_results sia il numero totale di risultati
+$total_results = 44075; // Totale di 100 risultati (modifica a seconda del tuo database)
+$results_per_page = 200; // Risultati per pagina
+$total_pages = ceil($total_results / $results_per_page); // Calcola il numero di pagine totali
+
+// Imposta la pagina corrente (prende il valore dalla query string)
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = max(1, min($page, $total_pages)); // Assicura che la pagina sia tra 1 e $total_pages
+
+// Calcola lo skip
+$skip = ($page - 1) * $results_per_page;
 $filter = [];
+// Esegui la query MongoDB con limit e skip
 $options = [
-    'sort' => ['popularity' => -1],
-    'limit' => 100
+    'limit' => $results_per_page,
+    'skip' => $skip,
+    'sort' => ['popularity' => -1], // Ordina i risultati per popolarità
 ];
 
 $query = new MongoDB\Driver\Query($filter, $options);
 $cursor = $manager->executeQuery('admin.Spotify', $query);
+// Pagina successiva
+$next_page = $page < $total_pages ? $page + 1 : $total_pages;
+// Pagina precedente
+$prev_page = $page > 1 ? $page - 1 : 1;
+// Imposta la finestra di paginazione in base alla pagina corrente
+$pagination_window = 3; // Numero di pagine da mostrare prima e dopo la pagina corrente
+
+// Calcola la finestra di paginazione
+$start_page = max(1, $page - $pagination_window);  // Prima pagina visibile
+$end_page = min($total_pages, $page + $pagination_window);  // Ultima pagina visibile
+
+// Gestisci il caso della prima pagina (mostra 6 successive)
+if ($page == 1) {
+    $start_page = 1;
+    $end_page = min($total_pages, 6);
+}
+// Gestisci il caso della seconda pagina (mostra 5 successive e la prima)
+elseif ($page == 2) {
+    $start_page = 1;
+    $end_page = min($total_pages, 5);
+}
+// Gestisci il caso dell'ultima pagina (mostra 6 precedenti)
+elseif ($page == $total_pages) {
+    $start_page = max(1, $total_pages - 5);
+    $end_page = $total_pages;
+}
+// Gestisci il caso della penultima pagina (mostra 5 precedenti e l'ultima)
+elseif ($page == $total_pages - 1) {
+    $start_page = max(1, $total_pages - 5);
+    $end_page = $total_pages;
+}
+
 $filters = [];
 $sort = [];
 if (!empty($_GET)) {
-
-
+    // Filtri come nel tuo codice originale
     if (isset($_GET['danceability_min']) && $_GET['danceability_min'] !== '') {
         $filters['danceability']['$gte'] = (float)$_GET['danceability_min'];
     }
-
     if (isset($_GET['valence_min']) && $_GET['valence_min'] !== '') {
         $filters['valence']['$gte'] = (float)$_GET['valence_min'];
     }
-
     if (isset($_GET['popularity_min']) && $_GET['popularity_min'] !== '') {
         $filters['popularity']['$gte'] = (int)$_GET['popularity_min'];
     }
-
     if (isset($_GET['explicit']) && $_GET['explicit'] !== '') {
         $filters['explicit'] = (bool)$_GET['explicit'];
     }
-if (!empty($_GET['sort_field'])) {
-    $field = $_GET['sort_field'];
-    $direction = ($_GET['sort_order'] ?? 'desc') === 'asc' ? 1 : -1;
-    $sort[$field] = $direction;
+
+    if (!empty($_GET['sort_field'])) {
+        $field = $_GET['sort_field'];
+        $direction = ($_GET['sort_order'] ?? 'desc') === 'asc' ? 1 : -1;
+        $sort[$field] = $direction;
+    }
+
+
+    if (!empty($sort)) {
+        $options['sort'] = $sort;
+    }
+
+    $query = new MongoDB\Driver\Query($filters, $options);
+    $cursor = $manager->executeQuery('admin.Spotify', $query);
 }
 
-$options = [
-    'limit' => 100
-];
-
-if (!empty($sort)) {
-    $options['sort'] = $sort;
-}
-
-$query = new MongoDB\Driver\Query($filters, $options);
-$cursor = $manager->executeQuery('admin.Spotify', $query);
-}
+$countCommand = new MongoDB\Driver\Command([
+    'count' => 'Spotify',
+    'query' => (object) $filters
+]);
+$countResult = $manager->executeCommand('admin', $countCommand)->toArray()[0];
+$totalSongs = $countResult->n;
+$totalPages = ceil($totalSongs / $results_per_page); // Calcola il numero totale di pagine
 
 $start = microtime(true);
 
@@ -162,7 +209,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     }
 }
 
-
+$countCommand = new MongoDB\Driver\Command([
+    'count' => 'Spotify',
+]);
+$countResult = $manager->executeCommand('admin', $countCommand)->toArray()[0];
+$totalSongs = $countResult->n;
 ?>
 
 
@@ -396,6 +447,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
   border: 1px solid #ccc;
   border-radius: 6px;
   background-color: #f9f9f9;
+  width: 250px;s
 }
 
 /* Celle */
@@ -452,7 +504,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 .toast {
     visibility: hidden;
     min-width: 250px;
-    margin-left: -125px;
+    margin-left: -155px;
     background-color: #333;
     color: white;
     text-align: center;
@@ -461,6 +513,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     position: fixed;
     z-index: 1;
     left: 50%;
+    right: 50%;
     bottom: 30px;
     font-size: 17px;
 }
@@ -478,6 +531,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
 @keyframes fadeout {
     from {bottom: 30px; opacity: 1;}
     to {bottom: 0; opacity: 0;}
+}
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin: 20px 0;
+}
+
+.pagination a,
+.pagination span {
+    margin: 0 5px;
+    padding: 10px;
+    text-decoration: none;
+    color: #333;
+    background-color: #f1f1f1;
+    border-radius: 5px;
+}
+
+.pagination .page-num {
+    font-weight: bold;
+}
+
+.pagination .prev, .pagination .next {
+    font-size: 18px;
+}
+
+.pagination .first, .pagination .last {
+    font-weight: bold;
+}
+
+.pagination .ellipsis {
+    font-size: 16px;
+}
+
+.pagination a:hover {
+    background-color: #ddd;
+}
+
+.pagination .active {
+    background-color: #4CAF50;
+    color: white;
 }
 
     </style>
@@ -569,7 +663,33 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                 <option value="desc" <?= isset($_GET['sort_order']) && $_GET['sort_order'] == 'desc' ? 'selected' : ''; ?>>Decrescente</option>
             </select>
         </label>
+        <input type="hidden" name="page" value="<?php echo htmlspecialchars($page); ?>">
+
         <button type="submit" class="button1">Applica filtri</button>
+        <!-- Codice HTML per la paginazione -->
+        <div class="pagination">
+            <!-- Prima Pagina -->
+            <a href="?page=1" class="first">First page</a>
+
+            <!-- Freccia Precedente -->
+            <a href="?page=<?php echo $prev_page; ?>" class="prev">←</a>
+
+            <?php
+            // Mostra numeri di pagina con puntini se necessario
+            $page_range = range(1, $total_pages); // Crea un array da 1 a $total_pages
+
+            // Display dei numeri di pagina visibili
+                for ($i = $start_page; $i <= $end_page; $i++) {
+                    echo "<a href='?page=$i'>$i</a>";
+                }
+            ?>
+
+            <!-- Freccia Successiva -->
+            <a href="?page=<?php echo $next_page; ?>" class="next">→</a>
+
+            <!-- Ultima Pagina -->
+            <a href="?page=<?php echo $total_pages; ?>" class="last">Last Page</a>
+        </div>
     </form>
 
     <div class="song-list">
@@ -613,7 +733,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <input type="hidden" name="song_id" value="<?= (string)$song->_id ?>">
                             <input type="hidden" name="song_name" value="<?= (string)$song->track_name ?>">
                             <input type="hidden" name="addToFavorites" value="false">
-                            <button id="aggiungiPlaylistBtn" class="add-button">Aggiungi alla Playlist</button>
+                            <button id="aggiungiPlaylistBtn" class="add-button">Add to Playlist</button>
                             </form>
                     </br>
                         <!-- Bottone "Aggiungi ai preferiti" -->
@@ -621,10 +741,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                             <input type="hidden" name="track_id" value="<?= htmlspecialchars($song->_id) ?>">
                             <input type="hidden" name="track_name" value="<?= (string)$song->track_name ?>">
                             <input type="hidden" name="addToFavorites" value="true">
-                            <button class="add-button" type="submit">Aggiungi ai preferiti</button>
+                            <button class="add-button" type="submit">Add to Favorites</button>
                         </form>
                     <?php else: ?>
-                        <p><a href="login.php">Per aggiungere ai preferiti e alle playlist, effettua il login!</a></p>
+                        <p><a href="login.php">"Log in to add to favorites and playlists!"</a></p>
                     <?php endif; ?>
                 </div>
             </div>

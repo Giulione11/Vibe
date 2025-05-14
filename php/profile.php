@@ -104,7 +104,6 @@ if (!empty($objectIds)) {
     margin-top:auto;
     background-size: cover;
     width: 100%;
-    height: 100vh; /* vh = viewport height */
 }    
 .song-list { display: flex; flex-direction: column; gap: 12px; max-width: 800px; margin: auto;opacity: 0.8;}
 .song-card {
