@@ -53,8 +53,10 @@ if (!empty($objectIds)) {
 
     // Seconda collezione (solo quelli mancanti)
     $remaining = array_diff($objectIds, array_map(fn($id) => new ObjectId($id), array_keys($tracks)));
-
     if (!empty($remaining)) {
+
+        $remaining = array_values($remaining); // <--- aggiungi questo
+
         $query2 = new MongoDB\Driver\Query(['_id' => ['$in' => $remaining]]);
         $cursor2 = $manager->executeQuery('admin.Spotify', $query2);
         foreach ($cursor2 as $track) {
@@ -247,7 +249,7 @@ if (!empty($objectIds)) {
     <ul>
     <?php foreach ($playlist->brani ?? [] as $b): ?>
         <?php $track = $tracks[$b->id_brano] ?? null; ?>
-        <li><?= $track ? $track->track_name . " - " . $track->{'artists'} : "Brano non trovato" ?>
+    <li> <?= $track ? $track->track_name . " - " . (isset($track->artists) ? $track->artists : $track->{'artist(s)_name'}) : "Brano non trovato" ?>    
     <?php if ($track): ?>
         <form method="post" action="rimuovi_da_playlist.php" style="display:inline;">
             <input type="hidden" name="id_brano" value="<?= $b->id_brano ?>">
