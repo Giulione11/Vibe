@@ -184,7 +184,7 @@ if (!empty($objectIds)) {
 <p>Cognome: <?= $user->profilo->cognome ?></p>
 <p>Email: <?= $user->profilo->email ?></p>
 <p>Genere: <?= $user->profilo->genere ?></p>
-<p>Data di nascita: <?= $user->profilo->data_nascita ?></p>
+<p>Data di nascita: <?= $user->profilo->data_nascita->toDateTime()->format('d/m/Y') ?></p>
 <p>Bio: <?= $user->profilo->bio ?></p>
             </div>
             </div>
