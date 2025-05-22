@@ -527,7 +527,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                         <li class="active"> <a href="index.php">Home</a> </li>
                                         <li> <a href="top100.php">TOP 100</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
-                                        <li> <a href="blog.php">Trend</a> </li>
+                                        <li> <a href="trend.php">Trend</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
                                         <li> <a href="profile.php"><?php echo $_SESSION['utente_loggato'] ?></a> </li>
                                         <li><a href="logout.php">Logout</a></li>
