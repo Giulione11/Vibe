@@ -929,7 +929,7 @@ function aggiungiCanzoneAPlaylist(playlistName, branoId) {
     body: JSON.stringify({
         nome_playlist: playlistName,
         song_id: branoId,
-        action: 'aggiungi'
+        action: 'add'
     })
 })
 .then(response => response.json())
@@ -962,7 +962,7 @@ function rimuoviCanzoneDaPlaylist(playlistName, branoId) {
     body: JSON.stringify({
         nome_playlist: playlistName,
         song_id: branoId,
-        action: 'rimuovi'
+        action: 'remove'
     })
 })
 .then(response => response.json())
