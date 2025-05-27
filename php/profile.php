@@ -1,5 +1,7 @@
 <?php 
+use MongoDB\BSON\ObjectId;
 session_start();
+
 $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 
 $username = $_SESSION['utente_loggato']; // o qualunque username attivo
@@ -13,7 +15,6 @@ $user = current($userCursor->toArray());
 if (!$user) {
     die("Utente non trovato");
 }
-use MongoDB\BSON\ObjectId;
 
 // 1. Raccogli tutti gli ID dei brani
 $all_ids = [];
@@ -53,8 +54,7 @@ if (!empty($objectIds)) {
 
     // Seconda collezione (solo quelli mancanti)
     $remaining = array_diff($objectIds, array_map(fn($id) => new ObjectId($id), array_keys($tracks)));
-    if (!empty($remaining)) {
-
+    if (!empty($remaining)) { 
         $remaining = array_values($remaining); // <--- aggiungi questo
 
         $query2 = new MongoDB\Driver\Query(['_id' => ['$in' => $remaining]]);
@@ -179,30 +179,46 @@ if (!empty($objectIds)) {
        <div class="song-list">
         <div class="song-card">
             <div class="song-info">
-       <h2 style="font-weight: bold;">Profilo </h2>
-<p>Nome: <?= $user->profilo->nome ?> </p>
-<p>Cognome: <?= $user->profilo->cognome ?></p>
+       <h2 style="font-weight: bold;">Profile </h2>
+<p>Name: <?= $user->profilo->nome ?> </p>
+<p>Surname: <?= $user->profilo->cognome ?></p>
 <p>Email: <?= $user->profilo->email ?></p>
-<p>Genere: <?= $user->profilo->genere ?></p>
-<p>Data di nascita: <?= $user->profilo->data_nascita->toDateTime()->format('d/m/Y') ?></p>
+<p>Gender: <?= $user->profilo->genere ?></p>
+<?php
+// Supponiamo $user->profilo->data_nascita sia la stringa ISO 8601
+$dataNascitaStr = $user->profilo->data_nascita;
+
+if (!empty($dataNascitaStr)) {
+    $date = new DateTime($dataNascitaStr);
+    echo '<p>Date of Birth: ' . $date->format('d/m/Y') . '</p>';
+} else {
+    echo '<p>Data di nascita non disponibile</p>';
+}
+?>
 <p>Bio: <?= $user->profilo->bio ?></p>
             </div>
             </div>
             <div class="song-card">
             <div class="song-info">
-<h3 style="font-weight: bold;">🎧 Brani Preferiti</h3>
+<h3 style="font-weight: bold;">🎧 Favorite Tracks</h3>
 <ul>
 <?php foreach ($user->preferiti->brani ?? [] as $b): ?>
     <?php 
         $id = (string)$b->id_brano;
         $track = $tracks[$id] ?? null;
-        $artistName = isset($track->{'artists'}) ? $track->{'artists'} : 'Artista sconosciuto';
-        ?>
-    <li> <?=  $track ? $track->track_name . " - " . $artistName : 'Brano non trovato'    ?>
+        if (isset($track->{'artists'})) {
+            $artistName = $track->{'artists'};
+        } elseif (isset($track->{'artist(s)_name'})) {
+            $artistName = $track->{'artist(s)_name'};
+        } else {
+            $artistName = 'Unknown artist';
+        }        
+    ?>
+    <li> <?=  $track ? $track->track_name . " - " . $artistName : 'Brano not found'    ?>
 <?php if ($track): ?>
         <form method="post" action="rimuovi_preferito.php" style="display:inline;">
             <input type="hidden" name="id_brano" value="<?= $id ?>">
-            <button type="submit" style="background:none;border:none;color:red;cursor:pointer;" title="Rimuovi dai preferiti" >🗑️</button>
+            <button type="submit" style="background:none;border:none;color:red;cursor:pointer;" title="Remove from favorites" >🗑️</button>
         </form>
     <?php endif; ?></li>
 <?php endforeach; ?>
@@ -212,7 +228,7 @@ if (!empty($objectIds)) {
             <div class="song-card">
             <div class="song-info">
             <div style="display: flex; align-items: center; gap: 10px;">
-<h3 style="font-weight: bold; text-align: center;margin: 0;">🎶 Playlist Personali</h3>
+<h3 style="font-weight: bold; text-align: center;margin: 0;">🎶 <?php echo $_SESSION['utente_loggato'];?>'s Playlist</h3>
 <button id="addPlaylistBtn" title="Crea nuova playlist" style="
         background-color: green;
         color: white;

@@ -113,3 +113,7 @@ $pipeline = [
 
 
 ---
+PER CARICARE FILE SUL DOCUMENTO 
+ docker cp "C:\Users\User\Desktop\Ingegneria Informatica\Magistrale Engineering in computer Science\Data Management\Dataset progetto\Spotify\Avvio_Dataset\fake_user.json" mongo:/data/fake_user.json
+
+docker exec -i mongo mongoimport --db admin --collection User --file /data/fake_user.json --jsonArray

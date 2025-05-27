@@ -91,7 +91,15 @@ if (!empty($_GET)) {
     $query = new MongoDB\Driver\Query($filters, $options);
     $cursor = $manager->executeQuery('admin.Spotify', $query);
 }
+$uniqueTracks = [];
+$seenNames = [];
 
+foreach ($cursor as $document) {
+    if (!in_array($document->track_name, $seenNames)) {
+        $uniqueTracks[] = $document;
+        $seenNames[] = $document->track_name;
+    }
+}
 $countCommand = new MongoDB\Driver\Command([
     'count' => 'Spotify',
     'query' => (object) $filters
@@ -101,16 +109,6 @@ $totalSongs = $countResult->n;
 $totalPages = ceil($totalSongs / $results_per_page); // Calcola il numero totale di pagine
 
 $start = microtime(true);
-
-/* Esegui la query
-$query = new MongoDB\Driver\Query($filters, $options);
-$cursor = $manager->executeQuery('mydb.tracks', $query);
-
-$end = microtime(true);
-$executionTime = $end - $start;
-
-echo "Tempo di esecuzione della query: " . number_format($executionTime, 6) . " secondi\n";
-*/
 
 $messaggio = ""; // Variabile per il messaggio
 
@@ -129,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['track_id']) && !empt
         $esiste = iterator_count($cursor) > 0;
 
         if ($esiste) {
-            $messaggio = "Il brano è già nei preferiti!";
+            $messaggio = "The track is already in your favorites!";
             // Restituisci una risposta JSON
             echo json_encode(['success' => false, 'message' => $messaggio]);
             exit();
@@ -150,7 +148,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && !empty($_POST['track_id']) && !empt
         $result = $manager->executeBulkWrite('admin.User', $bulk);
 
         // Imposta il messaggio di successo
-        $messaggio = "Brano " .$_POST['track_name']. " aggiunto ai preferiti!";
+        $messaggio = "Track " .$_POST['track_name']. " add to favorites!";
 
         // Restituisci una risposta JSON
         echo json_encode(['success' => true, 'message' => $messaggio]);
@@ -214,6 +212,7 @@ $countCommand = new MongoDB\Driver\Command([
 ]);
 $countResult = $manager->executeCommand('admin', $countCommand)->toArray()[0];
 $totalSongs = $countResult->n;
+
 ?>
 
 
@@ -634,13 +633,13 @@ $totalSongs = $countResult->n;
     <div class="sfondo">
     <h1 style="color: white; margin-left: 700px; font-weight:bold;">Archive</h1>
     <form method="GET" class="formfiltri">
-        <label style="color: white; font-weight: bold;">Danceability (%) maggiore di:
+        <label style="color: white; font-weight: bold;">Danceability (%) greater than:
             <input type="number" name="danceability_min" min="0" max="100" value="<?= $_GET['danceability_min'] ?? '' ?>">
         </label>
-        <label style="color: white; font-weight: bold;">Valence (%) maggiore di:
+        <label style="color: white; font-weight: bold;">Valence (%) greater than:
             <input type="number" name="valence_min" min="0" max="100" value="<?= $_GET['valence_min'] ?? '' ?>">
         </label>
-        <label style="color: white; font-weight: bold;">Popularity (%) maggiore di:
+        <label style="color: white; font-weight: bold;">Popularity (%) greater than:
             <input type="number" name="popularity_min" min="0" max="100" value="<?= $_GET['popularity_min'] ?? '' ?>">
         </label>
         <label style="color: white; font-weight: bold;">Explicit:
@@ -650,22 +649,22 @@ $totalSongs = $countResult->n;
                 <option value="0" <?= isset($_GET['explicit']) && $_GET['explicit'] == '0' ? 'selected' : ''; ?>>No</option>
             </select>
         </label>
-        <label style="color: white; font-weight: bold;">Ordina per:
+        <label style="color: white; font-weight: bold;">Order by:
             <select name="sort_field" class="select1">
                 <option value="popularity" <?= isset($_GET['sort_field']) && $_GET['sort_field'] == 'popularity' ? 'selected' : ''; ?>>Popularity</option>
                 <option value="danceability" <?= isset($_GET['sort_field']) && $_GET['sort_field'] == 'danceability' ? 'selected' : ''; ?>>Danceability</option>
                 <option value="valence" <?= isset($_GET['sort_field']) && $_GET['sort_field'] == 'valence' ? 'selected' : ''; ?>>Valence</option>
             </select>
         </label>
-        <label style="color: white; font-weight: bold;">Direzione:
+        <label style="color: white; font-weight: bold;">Direction:
             <select name="sort_order" class="select1">
-                <option value="asc" <?= isset($_GET['sort_order']) && $_GET['sort_order'] == 'asc' ? 'selected' : ''; ?>>Crescente</option>
-                <option value="desc" <?= isset($_GET['sort_order']) && $_GET['sort_order'] == 'desc' ? 'selected' : ''; ?>>Decrescente</option>
+                <option value="asc" <?= isset($_GET['sort_order']) && $_GET['sort_order'] == 'asc' ? 'selected' : ''; ?>>Ascending</option>
+                <option value="desc" <?= isset($_GET['sort_order']) && $_GET['sort_order'] == 'desc' ? 'selected' : ''; ?>>Decreasing</option>
             </select>
         </label>
         <input type="hidden" name="page" value="<?php echo htmlspecialchars($page); ?>">
 
-        <button type="submit" class="button1">Applica filtri</button>
+        <button type="submit" class="button1">Apply filters</button>
         <!-- Codice HTML per la paginazione -->
         <div class="pagination">
             <!-- Prima Pagina -->
@@ -693,7 +692,7 @@ $totalSongs = $countResult->n;
     </form>
 
     <div class="song-list">
-        <?php foreach ($cursor as $song): ?>
+        <?php foreach ($uniqueTracks  as $song): ?>
             <div class="song-card">
                 <div class="song-info">
                     <div class="song-title"><?= htmlspecialchars($song->track_name ?? 'Titolo sconosciuto') ?></div>
@@ -754,18 +753,18 @@ $totalSongs = $countResult->n;
 <div id="popup" class="popup-overlay" style="display: none;">
     <div class="popup-content">
         <p id="popup-message">Qui verrà mostrato il messaggio</p>
-        <button onclick="closePopup()">Chiudi</button>
+        <button onclick="closePopup()">Close</button>
     </div>
 </div>
 <div id="playlist-popup" class="popup" style="display: none;">
   <div class="popup-content">
-    <h2>Seleziona una Playlist</h2>
+    <h2>Choose a Playlist</h2>
     <ul id="playlist-list">
       <!-- La lista delle playlist verrà aggiunta dinamicamente tramite JS -->
     </ul>
     <div class="popup-buttons">
-      <button id="close-popup" onclick="closePlaylistPopup()">Annulla</button>
-      <button id="add-to-playlist" onclick="addToPlaylist()">Aggiungi alla Playlist</button>
+      <button id="close-popup" onclick="closePlaylistPopup()">Cancel</button>
+      <button id="add-to-playlist" onclick="addToPlaylist()">Add to Playlist</button>
     </div>
   </div>
 </div>
@@ -849,14 +848,14 @@ function mostraPopupPlaylist(playlists, branoId) {
     content.className = "popup-content";
 
     const title = document.createElement("h3");
-    title.textContent = "Scegli una playlist";
+    title.textContent = "Choose a playlist";
     content.appendChild(title);
 
     if (playlists.length === 0) {
         const br = document.createElement("br");
         const noPlaylists = document.createElement("a");
         noPlaylists.href = "profilo.php"; // cambia con il path corretto se diverso
-        noPlaylists.textContent = "Non hai playlist. Clicca qui per crearne una!";
+        noPlaylists.textContent = "You have no playlists. Click here to create one!";
         noPlaylists.className = "no-playlist-link"; // opzionale: per styling
         content.appendChild(br);
         content.appendChild(noPlaylists);
@@ -870,7 +869,7 @@ function mostraPopupPlaylist(playlists, branoId) {
 
             const cellName = document.createElement("div");
             cellName.className = "playlist-cell name";
-            cellName.textContent = pl.nome_playlist || "Senza nome";
+            cellName.textContent = pl.nome_playlist || "No nome";
 
             const cellBtn = document.createElement("div");
             cellBtn.className = "playlist-cell button";
@@ -879,7 +878,7 @@ function mostraPopupPlaylist(playlists, branoId) {
 
             const addBtn = document.createElement("button");
             addBtn.className = "addPlaylistItemBtn";
-            addBtn.title = "Aggiungi a questa playlist";
+            addBtn.title = "Add to the playlist";
             addBtn.innerText = "+";
 
              // Controlla se il brano è già nella playlist
@@ -912,7 +911,7 @@ function mostraPopupPlaylist(playlists, branoId) {
     }
 
     const closeBtn = document.createElement("button");
-    closeBtn.textContent = "Chiudi";
+    closeBtn.textContent = "Close";
     closeBtn.className = "add-button";
     closeBtn.onclick = () => popup.remove();
 

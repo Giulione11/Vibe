@@ -26,7 +26,7 @@ $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 $bulk = new MongoDB\Driver\BulkWrite;
 
 // Aggiunta o rimozione del brano
-if ($action === 'aggiungi') {
+if ($action === 'add') {
     $bulk->update(
         [
             'username' => $username,
@@ -36,7 +36,7 @@ if ($action === 'aggiungi') {
             '$push' => ['playlist_personali.$.brani' => ['id_brano' => $song_id]]
         ]
     );
-} elseif ($action === 'rimuovi') {
+} elseif ($action === 'remove') {
     $bulk->update(
         [
             'username' => $username,
@@ -55,6 +55,6 @@ if ($action === 'aggiungi') {
 $manager->executeBulkWrite('admin.User', $bulk);
 
 // Risposta finale
-echo json_encode(['success' => true, 'message' => "Brano {$action} con successo"]);
+echo json_encode(['success' => true, 'message' => "Track {$action} with success"]);
 exit();
 ?>

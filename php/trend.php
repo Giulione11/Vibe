@@ -8,7 +8,6 @@ if (!isset($_SESSION['utente_loggato'])) {
     exit();
 }
 $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
-
 // === Trend 1: Top 10 artisti con più brani ===
 $pipeline1 = [
     ['$group' => ['_id' => '$artist(s)_name', 'total_tracks' => ['$sum' => 1]]],
@@ -20,13 +19,16 @@ $command1 = new MongoDB\Driver\Command([
     'aggregate' => 'Spotify2023',
     'pipeline' => $pipeline1,
     'cursor' => new stdClass,
+    'allowDiskUse' => true
 ]);
-
+$__start_time = microtime(true);
 $cursor1 = $manager->executeCommand('admin', $command1);
+$__end_time = microtime(true);
+$__execution_time = $__end_time - $__start_time;  // latenza di connessione misurata;
+
 $topArtists = $cursor1->toArray(); // 👈 Trend 1 salvato qui
 
-
-
+$__start_time = microtime(true);
 // === Trend 2: Distribuzione dei brani per anno ===
 $pipeline2 = [
     ['$group' => ['_id' => '$released_year', 'count' => ['$sum' => 1]]],
@@ -55,7 +57,10 @@ echo "<script>
 </script>";
 // Importante: la pipeline usa $dateFromString per convertire la stringa in data,
 // e $year per estrarre l'anno da quella data
+$__end_time = microtime(true);
+$__execution_time1 = $__end_time - $__start_time;
 
+$__start_time = microtime(true);
 $pipeline3 = [
     [
         '$addFields' => [
@@ -107,6 +112,11 @@ echo "<script>
     const avgEnergy = " . json_encode($avgEnergy) . ";
 </script>";
 
+// Fine timing — calcolo durata
+$__end_time = microtime(true);
+$__execution_time2 = $__end_time - $__start_time;
+
+$__start_time = microtime(true);
 $pipeline4 = [
     [
         '$bucket' => [
@@ -148,6 +158,10 @@ echo "<script>
     const bucketCounts = " . json_encode($bucketCounts) . ";
 </script>";
 
+$__end_time = microtime(true);
+$__execution_time3 = $__end_time - $__start_time;
+
+$__start_time = microtime(true);
 $pipeline5 = [
     [
         '$project' => [
@@ -214,6 +228,12 @@ foreach ($cursor5 as $doc) {
       $braniPreferiti[] = $brano;
     }
 }
+
+// Fine timing — calcolo durata
+$__end_time = microtime(true);
+$__execution_time4 = $__end_time - $__start_time;
+
+$__start_time = microtime(true);
 $pipelineTop100 = [
     [
         '$project' => [
@@ -275,7 +295,11 @@ $confronto = [
 ];
 // Invia i dati in formato JSON (per esempio con echo se dentro un endpoint o in una pagina)
 echo "<script> const confronto = " . json_encode($confronto) . "; </script>";
+// Fine timing — calcolo durata
+$__end_time = microtime(true);
+$__execution_time5 = $__end_time - $__start_time;
 
+$__start_time = microtime(true);
 $pipelineMetascore = [
     [
         '$addFields' => [
@@ -323,6 +347,9 @@ echo "<script>
     const songCountsMetascore = " . json_encode($songCountsMetascore) . ";
 </script>";
 
+// Fine timing — calcolo durata
+$__end_time = microtime(true);
+$__execution_time6 = $__end_time - $__start_time;
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -563,7 +590,7 @@ body::-webkit-scrollbar {
     <a href="#section2">Top 100 Hits: Yearly Song Trends</a>
     <a href="#section3">Music Mood Shift</a>
     <a href="#section4">Beat Flow</a>
-    <a href="#section5">Top 20 Favorites playlists</a>
+    <a href="#section5">Top 20 Favorites Tracks</a>
     <a href="#section6">Top 100 vs Archive Tracks</a>
     <a href="#section7">Metascore Trends</a>
   </div>
