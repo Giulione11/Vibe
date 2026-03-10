@@ -1,0 +1,74 @@
+[
+  {
+    "_id": "77fa2c91e5b54233be6c1011",
+    "username": "chiara_s",
+    "password": "$2y$10$asjdh123sdf98sd7f9sdfhjsdf88asd",
+    "data_registrazione": "2024-02-03T10:15:00.000Z",
+    "profilo": {
+      "nome": "Chiara",
+      "cognome": "Serra",
+      "email": "chiara.serra@example.com",
+      "data_nascita": "1991-04-18T00:00:00.000Z",
+      "genere": "female",
+      "bio": "Appassionata di jazz e cantante amatoriale.",
+      "ruolo": "user"
+    },
+    "preferiti": {
+      "brani": []
+    }
+  },
+  {
+    "_id": "81bc39fa443a11ec932f0bda",
+    "username": "riccardo_l",
+    "password": "$2y$10$8sdf7s9dfh2o34nho23r98hwef234kj",
+    "data_registrazione": "2024-06-14T08:45:00.000Z",
+    "profilo": {
+      "nome": "Riccardo",
+      "cognome": "Leoni",
+      "email": "riccardo.leoni@example.com",
+      "data_nascita": "1990-12-24T00:00:00.000Z",
+      "genere": "male",
+      "bio": "Chitarrista e fanatico del rock anni '70.",
+      "ruolo": "user"
+    },
+    "preferiti": {
+      "brani": []
+    }
+  },
+  {
+    "_id": "5f2a8d701a5e4c6fb77e1f9e",
+    "username": "valentina_b",
+    "password": "$2y$10$123sdjfh9234lkjdf934jldkfjlkwejf",
+    "data_registrazione": "2023-11-30T12:10:00.000Z",
+    "profilo": {
+      "nome": "Valentina",
+      "cognome": "Bianchi",
+      "email": "valentina.bianchi@example.com",
+      "data_nascita": "1994-03-03T00:00:00.000Z",
+      "genere": "female",
+      "bio": "Studio composizione e adoro l’elettronica.",
+      "ruolo": "user"
+    },
+    "preferiti": {
+      "brani": []
+    }
+  },
+  {
+    "_id": "629e1b7f21ff3a001cfcb000",
+    "username": "andrea_f",
+    "password": "$2y$10$asdhjkfhwe88rweh2o38r2wh9dfh23r",
+    "data_registrazione": "2024-01-22T17:00:00.000Z",
+    "profilo": {
+      "nome": "Andrea",
+      "cognome": "Ferrari",
+      "email": "andrea.ferrari@example.com",
+      "data_nascita": "1987-08-15T00:00:00.000Z",
+      "genere": "male",
+      "bio": "Scrivo recensioni per un blog musicale.",
+      "ruolo": "user"
+    },
+    "preferiti": {
+      "brani": []
+    }
+  }
+]
