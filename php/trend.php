@@ -10,6 +10,11 @@ if (!isset($_SESSION['utente_loggato'])) {
 $manager = new MongoDB\Driver\Manager("mongodb://mongo:27017");
 // === Trend 1: Top 10 artisti con più brani ===
 $pipeline1 = [
+    // 1. Crea un nuovo campo trasformando la stringa in un array (separa per virgola e spazio)
+    ['$set' => ['artisti_singoli' => ['$split' => ['$artist(s)_name', ', ']]]],
+    
+    // 2. Crea un documento separato per ogni artista nell'array
+    ['$unwind' => '$artisti_singoli'],
     ['$group' => ['_id' => '$artist(s)_name', 'total_tracks' => ['$sum' => 1]]],
     ['$sort' => ['total_tracks' => -1]],
     ['$limit' => 10]
@@ -558,7 +563,7 @@ body::-webkit-scrollbar {
                                 <nav class="main-menu">
                                 <ul class="menu-area-main">
                                         <li class="active"> <a href="index.php">Home</a> </li>
-                                        <li> <a href="top100.php">TOP 100</a> </li>
+                                        <li> <a href="top100.php">TOP Songs</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="trend.php">Trend</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
@@ -587,19 +592,19 @@ body::-webkit-scrollbar {
   <!-- Navbar fissa -->
   <div class="navbar">
     <a href="#section1">Top 10 Artists</a>
-    <a href="#section2">Top 100 Hits: Yearly Song Trends</a>
+    <a href="#section2">Top Songs Hits: Yearly Song Trends</a>
     <a href="#section3">Music Mood Shift</a>
     <a href="#section4">Beat Flow</a>
     <a href="#section5">Top 20 Favorites Tracks</a>
-    <a href="#section6">Top 100 vs Archive Tracks</a>
+    <a href="#section6">Top Songs vs Archive Tracks</a>
     <a href="#section7">Metascore Trends</a>
   </div>
 
   <!-- Sezioni a schermo intero -->
     <div class="fullpage-section" id="section1">
-        <h1>🎤 Top 10 Artists of 2023</h1>
+        <h1>🎤 Top 10 Artists of Top Songs</h1>
         <div class="trend-content">
-            <h2 class="trend-description">Ranking based on the total number of songs in the Spotify 2023 database.</h2>
+            <h2 class="trend-description">Ranking based on the total number of songs in the Top Songs database.</h2>
             <ol class="top-artists-list">
                 <?php $pos = 1; foreach ($topArtists as $artist): ?>
                     <li>
@@ -611,14 +616,14 @@ body::-webkit-scrollbar {
             </ol>
         </div>
           <h3>
-          This chart displays the top 10 artists with the highest number of tracks in the dataset. It highlights the most prolific artists based on the quantity of their musical output, offering insight into which artists dominated the Spotify landscape in terms of volume.
+          This chart displays the top 10 artists with the highest number of tracks in the dataset. It highlights the most prolific artists based on the quantity of their musical output, offering insight into which artists dominated the dataset landscape in terms of volume.
           </h3>
         <div class="back-to-top">
             <a href="#top">⬆ Torna su</a>
         </div>
     </div>
-    <div class="fullpage-section" id="section2" style="overflow-x:auto;"><h1>Top 100 Hits: the trend of songs by year</h1>
-          <h2 class="trend-description">View the distribution of Top 100 songs year by year.</h2>  
+    <div class="fullpage-section" id="section2" style="overflow-x:auto;"><h1>Top Songs Hits: the trend of songs by year</h1>
+          <h2 class="trend-description">View the distribution of Top Songs songs year by year.</h2>  
           <canvas id="yearChart" ></canvas>
           <!-- Trend 2: Distribution of Tracks by Release Year -->
           <h3>
@@ -684,8 +689,8 @@ body::-webkit-scrollbar {
         <h2 class="trend-description">Discover the tempo trends of chart-topping songs — from chill vibes to dancefloor bangers.</h2>    
         <canvas id="bpmChart" width="600" height="400"></canvas>
           <h3>
-          This bar chart categorizes tracks based on their BPM (Beats Per Minute), showing how frequently different tempo ranges occur in the dataset. It helps identify whether slow, mid-tempo, or fast-paced songs are more prevalent in the Spotify catalog.
-          The graph illustrates the temporal evolution of a musical index from the top 100, highlighting fluctuations in its mean, minimum, and maximum values. The data forms a wave-like pattern, reflecting changes in variability and intensity over time. Notably, the range between minimum and maximum values narrows in recent years, indicating increased homogeneity in the dataset.
+          This bar chart categorizes tracks based on their BPM (Beats Per Minute), showing how frequently different tempo ranges occur in the dataset. It helps identify whether slow, mid-tempo, or fast-paced songs are more prevalent in the Top Songs catalog.
+          The graph illustrates the temporal evolution of a musical index from the top Songs, highlighting fluctuations in its mean, minimum, and maximum values. The data forms a wave-like pattern, reflecting changes in variability and intensity over time. Notably, the range between minimum and maximum values narrows in recent years, indicating increased homogeneity in the dataset.
 
           Additionally, the BPM distribution reveals that most tracks cluster between 90 and 139 BPM, with fewer compositions at extreme tempos. This emphasizes a focus on mid-tempo music typical of mainstream genres.
                   </h3>
@@ -715,19 +720,19 @@ body::-webkit-scrollbar {
     </div>
 </div>
 
-    <div class="fullpage-section" id="section6"><h1>Top 100 vs Archive Tracks</h1>
-      <h2 class="trend-description">This chart compares the average values of three key audio features — danceability, energy, and valence — between the Top 100 playlist and the broader Spotify catalog, providing a quick insight into stylistic and emotional differences.</h2>  
+    <div class="fullpage-section" id="section6"><h1>Top Songs vs Archive Tracks</h1>
+      <h2 class="trend-description">This chart compares the average values of three key audio features — danceability, energy, and valence — between the Top Songs dataset and the broader Archive catalog, providing a quick insight into stylistic and emotional differences.</h2>  
       <canvas id="featureChart"></canvas>
       <h3>
-        This analysis compares two distinct music datasets: the Spotify catalog, which includes songs released from 1999 to 2023, and the Top 100 playlist, consisting of the most listened tracks primarily from 2023.
+        This analysis compares two distinct music datasets: the Archive catalog, which includes songs released from 1999 to 2023, and the Top Songs dataset, consisting of the most listened tracks primarily from 2023.
 
-        The Top 100 songs show a higher average danceability (67%) compared to the broader Spotify dataset (53.1%), reflecting that current hits favor catchy and rhythmically engaging beats that encourage movement.
+        The Top Songs songs show a higher average danceability (67%) compared to the broader Archive dataset (53.1%), reflecting that current hits favor catchy and rhythmically engaging beats that encourage movement.
 
-        Interestingly, the Spotify catalog features a slightly higher average energy (68.4%) than the Top 100 (64.3%). This suggests that while recent popular songs focus more on groove and rhythm, the larger pool of music from the past two decades includes many tracks with more intense and dynamic sound profiles.
+        Interestingly, the Archive catalog features a slightly higher average energy (68.4%) than the Top Songs (64.3%). This suggests that while recent popular songs focus more on groove and rhythm, the larger pool of music from the past two decades includes many tracks with more intense and dynamic sound profiles.
 
-        Regarding valence—the measure of musical positivity or happiness—the Top 100 tracks score moderately higher (51.4%) than the overall Spotify collection (46.9%). This indicates that recent hits tend to have a slightly brighter and more upbeat emotional tone compared to the wider music landscape spanning over 20 years.
+        Regarding valence—the measure of musical positivity or happiness—the Top Songs tracks score moderately higher (51.4%) than the overall Archive collection (46.9%). This indicates that recent hits tend to have a slightly brighter and more upbeat emotional tone compared to the wider music landscape spanning over 20 years.
 
-        Overall, this comparison highlights how trends in music consumption evolve over time, with recent chart-toppers emphasizing danceability and positive moods, while the broader Spotify library offers a more varied spectrum of energy and emotional complexity.
+        Overall, this comparison highlights how trends in music consumption evolve over time, with recent chart-toppers emphasizing danceability and positive moods, while the broader Archive library offers a more varied spectrum of energy and emotional complexity.
         </h3>
         <div class="back-to-top">
             <a href="#top">⬆ Torna su</a>
@@ -969,7 +974,7 @@ const bpmChart = new Chart(ctx2, {
         plugins: {
             title: {
                 display: true,
-                text: 'BPM Distribution in Top 100 Tracks',
+                text: 'BPM Distribution in Top Songs Tracks',
                 color: '#fff',
                 font: {
                     size: 20,
@@ -1018,7 +1023,7 @@ const bpmChart = new Chart(ctx2, {
       labels: confronto.labels,
       datasets: [
         {
-          label: 'Top 100',
+          label: 'Top Songs',
           data: confronto.Top100,
           backgroundColor: 'rgba(54, 162, 235, 0.7)',
           borderColor: 'rgba(54, 162, 235, 1)',

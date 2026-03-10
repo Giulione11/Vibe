@@ -152,7 +152,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="viewport" content="initial-scale=1, maximum-scale=1">
     <!-- site metas -->
-    <title>top 100</title>
+    <title>top Songs</title>
     <meta name="keywords" content="">
     <meta name="description" content="">
     <meta name="author" content="">
@@ -525,7 +525,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                                 <nav class="main-menu">
                                 <ul class="menu-area-main">
                                         <li class="active"> <a href="index.php">Home</a> </li>
-                                        <li> <a href="top100.php">TOP 100</a> </li>
+                                        <li> <a href="top100.php">TOP Songs</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="trend.php">Trend</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
@@ -551,7 +551,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     </header>
     <!-- end header -->
     <div class="sfondo">
-    <h1 style="color: white; margin-left: 700px; font-weight:bold;">Top 100</h1>
+    <h1 style="color: white; margin-left: 700px; font-weight:bold;">Top Songs</h1>
     <form method="GET" class="formfiltri" >
     <label style="color: white; font-weight: bold;">Danceability (%) greater than:
         <input type="number" name="danceability_min" min="0" max="100" value="<?= $_GET['danceability_min'] ?? '' ?>">

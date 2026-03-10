@@ -604,7 +604,7 @@ $totalSongs = $countResult->n;
                                 <nav class="main-menu">
                                 <ul class="menu-area-main">
                                         <li class="active"> <a href="index.php">Home</a> </li>
-                                        <li> <a href="top100.php">TOP 100</a> </li>
+                                        <li> <a href="top100.php">TOP Songs</a> </li>
                                         <li> <a href="songs.php"> Archive</a> </li>
                                         <li> <a href="trend.php">Trend</a> </li>
                                         <?php if (!empty($_SESSION['utente_loggato'])): ?>
